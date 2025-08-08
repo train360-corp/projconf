@@ -25,5 +25,10 @@ jobs:
         with:
           go-version: '1.22'
 
-      - name: Build using Makefile
-        run: make VERSION=${{ needs.version.outputs.version }}
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        id: goreleaser
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean --skip=validate
