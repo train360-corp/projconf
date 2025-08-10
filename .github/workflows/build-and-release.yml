@@ -31,7 +31,9 @@ jobs:
         with:
           distribution: goreleaser
           version: '~> v2'
-          args: release --clean --skip=validate --set version=${{ needs.version.outputs.version }}
+          args: release --clean --skip=validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_REPO_SECRET: ${{ secrets.HOMEBREW_TAP_REPO_SECRET }}
+          GORELEASER_CURRENT_TAG: v${{ needs.version.outputs.version }}
+          GORELEASER_PREVIOUS_TAG: v${{ needs.version.outputs.previous-version }}
