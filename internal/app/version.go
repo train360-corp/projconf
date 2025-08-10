@@ -1,3 +1,3 @@
-package version
+package app
 
 var Version = ""
