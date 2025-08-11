@@ -11,6 +11,15 @@ create table "public"."secrets" (
 
 alter table "public"."secrets" enable row level security;
 
+create policy "select based on RLS on projects"
+    on "public"."secrets"
+    as permissive
+    for select
+    to anon
+    using ((EXISTS ( SELECT 1
+                     FROM projects p
+                     WHERE (p.id = secrets.project_id))));
+
 CREATE UNIQUE INDEX secrets_pkey ON public.secrets USING btree (id);
 
 alter table "public"."secrets" add constraint "secrets_pkey" PRIMARY KEY using index "secrets_pkey";

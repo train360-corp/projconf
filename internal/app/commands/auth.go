@@ -24,7 +24,7 @@ func authCommand() *cli.Command {
 		Usage: "authenticate to a ProjConf server",
 		Flags: supabase.GetConfigFlags(&sb),
 		Action: func(c *cli.Context) error {
-
+			return nil
 		},
 	}
 }

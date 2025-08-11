@@ -17,18 +17,6 @@ builds:
     ldflags:
       - -s -w -X github.com/train360-corp/projconf/internal/app.Version={{.Version}}
 
-changelog:
-  use: github
-  groups:
-    - title: Features
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
-      order: 0
-    - title: "Bug fixes"
-      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
-      order: 1
-    - title: Others
-      order: 999
-
 nfpms:
   - vendor: Train360, Corp.
     description: ProjConf CLI {{.Version}}

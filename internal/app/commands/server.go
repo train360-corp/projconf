@@ -55,7 +55,7 @@ func serveCommand() *cli.Command {
 			errCh := make(chan error, 1)
 			go func() {
 				addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-				log.Printf("HTTP listening on http://%s", addr)
+				log.Printf("listening on http://%s", addr)
 				errCh <- srv.Serve()
 			}()
 

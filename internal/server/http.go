@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	ginvalidator "github.com/oapi-codegen/gin-middleware"
+	"github.com/train360-corp/projconf/internal/server/api"
 	"net/http"
 )
 
@@ -24,25 +26,19 @@ func NewHTTPServer(cfg Config) (*HTTPServer, error) {
 	r := gin.New()
 	r.Use(gin.Recovery())
 
-	// Routes
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
-	})
+	swagger := api.MustSpec()
+	r.Use(ginvalidator.OapiRequestValidator(swagger))
 
-	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-
-	httpSrv := &http.Server{
-		Addr:    addr,
-		Handler: r,
-	}
+	routes := &RouteHandlers{}
+	api.RegisterHandlers(r, routes)
 
 	return &HTTPServer{
 		cfg:    cfg,
 		router: r,
-		http:   httpSrv,
+		http: &http.Server{
+			Addr:    fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+			Handler: r,
+		},
 	}, nil
 }
 
