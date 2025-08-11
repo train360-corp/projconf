@@ -15,7 +15,7 @@ type Config struct {
 func GetConfigFlags(cfg *Config) []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
-			Name:        "url",
+			Name:        "endpoint",
 			Usage:       "fqdn http(s) URL where supabase is accessible",
 			Value:       "http://127.0.0.1:54321",
 			Destination: &cfg.Url,

@@ -7,10 +7,10 @@ import (
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/gin-gonic/gin"
 	ginvalidator "github.com/oapi-codegen/gin-middleware"
+	"github.com/train360-corp/projconf/internal/config"
 	"github.com/train360-corp/projconf/internal/server/api"
 	"github.com/train360-corp/projconf/internal/supabase"
 	"net/http"
-	"os"
 )
 
 type HTTPServer struct {
@@ -25,16 +25,6 @@ func NewHTTPServer(cfg Config) (*HTTPServer, error) {
 		gin.SetMode(cfg.Mode)
 	default:
 		gin.SetMode(gin.ReleaseMode)
-	}
-
-	SUPABASE_URL := os.Getenv("PROJCONF_SUPABASE_URL")
-	if SUPABASE_URL == "" {
-		return nil, errors.New("environment variable 'PROJCONF_SUPABASE_URL' is not set")
-	}
-
-	SUPABASE_ANON_KEY := os.Getenv("PROJCONF_SUPABASE_ANON_KEY")
-	if SUPABASE_ANON_KEY == "" {
-		return nil, errors.New("environment variable 'PROJCONF_SUPABASE_ANON_KEY' is not set")
 	}
 
 	r := gin.New()
@@ -55,20 +45,18 @@ func NewHTTPServer(cfg Config) (*HTTPServer, error) {
 		}
 
 		sb := supabase.GetWithAuth(&supabase.Config{
-			Url:     SUPABASE_URL,
-			AnonKey: SUPABASE_ANON_KEY,
+			Url:     config.Get(config.PROJCONF_SUPABASE_URL),
+			AnonKey: config.Get(config.PROJCONF_SUPABASE_ANON_KEY),
 		}, &supabase.AuthConfig{
 			Id:     id,
 			Secret: sec,
 		})
 
-		if client, clientErr := sb.GetSelf(); clientErr != nil {
-
+		if _, clientErr := sb.GetSelf(); clientErr != nil {
+			return clientErr
+		} else {
+			return nil
 		}
-
-		// TODO: attempt to get the client to verify if the authentication succeeds
-
-		return errors.New("authentication not implemented")
 	}
 	r.Use(ginvalidator.OapiRequestValidatorWithOptions(swagger, opts))
 

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Default values (can be overridden via environment variables)
+export PROJCONF_SUPABASE_URL="${PROJCONF_SUPABASE_URL:-http://127.0.0.1:54321}"
+export PROJCONF_SUPABASE_ANON_KEY="${PROJCONF_SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0}"
+
+echo "==> Building projconf..."
+goreleaser release --clean --skip=validate --snapshot
+
+echo "==> Running projconf..."
+exec ./dist/projconf_darwin_arm64_v8.0/projconf "$@"

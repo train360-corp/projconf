@@ -3,6 +3,32 @@ info:
   title: Secrets API
   version: 1.0.0
 paths:
+  /v1/clients/_self:
+    get:
+      summary: Get self
+      description: Returns the client object for the currently-authenticated client.
+      responses:
+        '200':
+          description: client object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  created_at:
+                    type: string
+                  display:
+                    type: string
+                  project_id:
+                    type: string
+                    format: uuid
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
   /v1/projects/{project_id}/environments/{environment_id}/secrets:
     get:
       summary: List secrets

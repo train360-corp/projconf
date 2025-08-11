@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/train360-corp/projconf/internal/config"
 	"github.com/train360-corp/projconf/internal/supabase/database"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type Client struct {
@@ -26,29 +29,63 @@ func GetWithAuth(config *Config, authConfig *AuthConfig) *Client {
 	return client
 }
 
+func GetFromContext(ctx *gin.Context) *Client {
+	return GetWithAuth(&Config{
+		Url:     config.Get(config.PROJCONF_SUPABASE_URL),
+		AnonKey: config.Get(config.PROJCONF_SUPABASE_ANON_KEY),
+	}, &AuthConfig{
+		Id:     ctx.GetHeader("x-client-secret-id"),
+		Secret: ctx.GetHeader("x-client-secret"),
+	})
+}
+
 func (c *Client) SetAuth(config *AuthConfig) {
 	c.auth = config
+}
+
+type requestConfig struct {
+	endpoint string
+	single   bool
+}
+
+func (c *Client) request(config *requestConfig) (*http.Response, error) {
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", strings.TrimSuffix(c.config.Url, "/"), strings.TrimPrefix(config.endpoint, "/")), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.config.AnonKey))
+	req.Header.Add("x-client-secret-id", c.auth.Id)
+	req.Header.Add("x-client-secret", c.auth.Secret)
+	if config.single {
+		req.Header.Add("Accept", "application/vnd.pgrst.object+json")
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func (c *Client) GetSelf() (*database.PublicClientsSelect, error) {
 
 	if c.self == nil {
-		url := fmt.Sprintf("%s/rest/v1/clients", c.config.Url)
-
-		client := &http.Client{}
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Add("Accept", "application/vnd.pgrst.object+json")
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.config.AnonKey))
-
-		res, err := client.Do(req)
+		res, err := c.request(&requestConfig{
+			endpoint: "/rest/v1/clients",
+			single:   true,
+		})
 		if err != nil {
 			return nil, err
 		}
 		defer res.Body.Close()
+
+		if res.StatusCode != http.StatusOK {
+			return nil, errors.New("unable to find client")
+		}
 
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
@@ -68,4 +105,44 @@ func (c *Client) GetSelf() (*database.PublicClientsSelect, error) {
 	}
 
 	return c.self, nil
+}
+
+type GetSecretsVariable struct {
+	Key string `json:"key"`
+}
+
+type GetSecretsSecret struct {
+	Value     string             `json:"value"`
+	Variables GetSecretsVariable `json:"variables"`
+}
+
+func (c *Client) GetSecrets(projectId string, environmentId string) ([]GetSecretsSecret, error) {
+
+	endpoint := fmt.Sprintf("/rest/v1/secrets?select=value%%2Cvariables(key)&project_id=eq.%s&environment_id=eq.%s", projectId, environmentId)
+	res, err := c.request(&requestConfig{
+		endpoint: endpoint,
+		single:   false,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		fmt.Println(string(body))
+		return nil, errors.New("unable to load secrets")
+	}
+
+	var secrets []GetSecretsSecret
+	if err := json.Unmarshal(body, &secrets); err != nil {
+		return nil, err
+	}
+
+	return secrets, nil
 }
