@@ -7,8 +7,6 @@ paths:
     get:
       summary: List secrets
       description: Returns all secrets for a given project environment.
-      security:
-        - ClientSecretAuth: []
       parameters:
         - name: project_id
           in: path
@@ -47,19 +45,14 @@ paths:
           description: Forbidden
 components:
   securitySchemes:
-    ClientSecretAuth:
+    ClientSecretId:
       type: apiKey
       in: header
       name: x-client-secret-id
-      description: |
-        Client authentication using a pair of headers:
-        - `x-client-secret-id`: The client identifier.
-        - `x-client-secret`: The client secret value.
-  parameters:
-    ClientSecretHeader:
-      name: x-client-secret
+    ClientSecret:
+      type: apiKey
       in: header
-      required: true
-      schema:
-        type: string
-      description: Client secret value.
+      name: x-client-secret
+security:
+  - ClientSecretId: [ ]
+    ClientSecret: [ ]
