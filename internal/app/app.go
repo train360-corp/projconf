@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/train360-corp/projconf/internal/app/commands"
 	"github.com/urfave/cli/v2"
 )
 
@@ -15,13 +16,7 @@ func Get() *cli.App {
 		Usage:   "A CLI utility for ProjConf",
 		Version: Version,
 		Commands: []*cli.Command{
-			{
-				Name:  "hello-world",
-				Usage: "Print a greeting",
-				Action: func(c *cli.Context) error {
-					return nil
-				},
-			},
+			commands.ServerCommand(),
 		},
 	}
 }

@@ -1,6 +1,7 @@
 create table "public"."projects" (
     "id" uuid not null default gen_random_uuid(),
-    "display" text not null default ''::text
+    "display" text not null default ''::text unique,
+    check ( length(trim(display)) > 1 AND display ~ '^[[:alnum:] _]+$' )
 );
 
 
