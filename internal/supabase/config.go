@@ -2,6 +2,11 @@ package supabase
 
 import "github.com/urfave/cli/v2"
 
+type AuthConfig struct {
+	Id     string
+	Secret string
+}
+
 type Config struct {
 	Url     string
 	AnonKey string
