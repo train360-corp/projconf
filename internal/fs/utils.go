@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 )
 
-func WriteTempFile(path string, data []byte, perm os.FileMode) error {
+func WriteDependencies(path string, data []byte, perm os.FileMode) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err

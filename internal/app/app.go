@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/train360-corp/projconf/internal/app/commands"
 	"github.com/train360-corp/projconf/internal/config"
-	"github.com/train360-corp/projconf/internal/dependencies/files"
 	"github.com/train360-corp/projconf/internal/fs"
 	"github.com/urfave/cli/v2"
 	"log"
@@ -20,11 +19,6 @@ func Get() *cli.App {
 		log.Fatal(fmt.Sprintf("failed to ensure system root: %s", err))
 	} else {
 		log.Printf("loaded from \"%s\"\n", root)
-	}
-
-	// write all required temporary files
-	if err := files.WriteTempFiles(); err != nil {
-		log.Fatal(fmt.Sprintf("failed to write temp files: %s", err))
 	}
 
 	cli.VersionPrinter = func(ctx *cli.Context) {

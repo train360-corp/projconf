@@ -1,0 +1,152 @@
+package database
+
+import (
+	"context"
+	"database/sql"
+	_ "embed"
+	"errors"
+	"fmt"
+	"github.com/google/uuid"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/train360-corp/projconf/internal/docker/types"
+	"github.com/train360-corp/projconf/internal/fs"
+	"log"
+	"net/url"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"time"
+)
+
+//go:embed embeds/realtime.sql
+var RealtimeSQL []byte
+
+//go:embed embeds/webhooks.sql
+var WebhooksSQL []byte
+
+//go:embed embeds/roles.sql
+var RolesSQL []byte
+
+//go:embed embeds/jwt.sql
+var JwtSQL []byte
+
+//go:embed embeds/_supabase.sql
+var SupabaseSQL []byte
+
+//go:embed embeds/logs.sql
+var LogsSQL []byte
+
+//go:embed embeds/pooler.sql
+var PoolerSQL []byte
+
+type Service struct {
+}
+
+func (srvc Service) WaitFor() error {
+	exec.Command("pg_isready", "-h", "127.0.0.1").Run()
+}
+
+func (srvc Service) GetDisplay() string {
+	return "Database (Postgres)"
+}
+
+func (srvc Service) Run(sharedEvn *types.SharedEvn) error {
+
+	userRoot, _ := fs.GetUserRoot()
+
+	args := []string{
+		"run", "--rm", "-it",
+		"--name", fmt.Sprintf("projconf-supabase-db-%s", uuid.New().String()),
+		"-e", "POSTGRES_HOST=/var/run/postgresql",
+		"-e", "PGPORT=5432",
+		"-e", "POSTGRES_PORT=5432",
+		"-e", "PGPASSWORD=" + sharedEvn.PGPASSWORD,
+		"-e", "POSTGRES_PASSWORD=" + sharedEvn.PGPASSWORD,
+		"-e", "PGDATABASE=postgres",
+		"-e", "POSTGRES_DB=postgres",
+		"-e", "JWT_SECRET=" + sharedEvn.JWT_SECRET,
+		"-e", "JWT_EXP=3600",
+		"-v", "db-config:/etc/postgresql-custom",
+		"-p", "127.0.0.1:5432:5432",
+	}
+
+	for _, writeable := range srvc.GetWriteables() {
+		args = append(args, "-v", fmt.Sprintf("%s:%s", writeable.LocalPath, writeable.ContainerPath))
+	}
+
+	dataDir := filepath.Join(userRoot, "db", "data")
+	args = append(args, "-v", fmt.Sprintf("%s:/var/lib/postgresql/data", dataDir))
+
+	args = append(args,
+		"supabase/postgres:17.4.1.055",
+		"postgres",
+		"-c", "config_file=/etc/postgresql/postgresql.conf",
+		"-c", "log_min_messages=fatal",
+		"-c", "wal_level=minimal",
+		"-c", "max_wal_senders=0",
+	)
+
+	cmd := exec.Command("docker", args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = nil
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return errors.New(fmt.Sprintf("failed to run docker command: %s", err))
+	}
+
+	return nil
+}
+
+func (srvc Service) GetWriteables() []types.Writeable {
+
+	usrRoot, err := fs.EnsureUserRoot()
+	if err != nil {
+		panic(errors.New(fmt.Sprintf("failed to get user root: %s", err)))
+	}
+
+	return []types.Writeable{
+		{
+			LocalPath:     filepath.Join(usrRoot, "db", "realtime.sql"),
+			Data:          RealtimeSQL,
+			Perm:          0o444,
+			ContainerPath: "/docker-entrypoint-initdb.d/migrations/99-realtime.sql:ro",
+		},
+		{
+			LocalPath:     filepath.Join(usrRoot, "db", "webhooks.sql"),
+			Data:          WebhooksSQL,
+			Perm:          0o444,
+			ContainerPath: "/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:ro",
+		},
+		{
+			LocalPath:     filepath.Join(usrRoot, "db", "roles.sql"),
+			Data:          RolesSQL,
+			Perm:          0o444,
+			ContainerPath: "/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro",
+		},
+		{
+			LocalPath:     filepath.Join(usrRoot, "db", "jwt.sql"),
+			Data:          JwtSQL,
+			Perm:          0o444,
+			ContainerPath: "/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:ro",
+		},
+		{
+			LocalPath:     filepath.Join(usrRoot, "db", "_supabase.sql"),
+			Data:          SupabaseSQL,
+			Perm:          0o444,
+			ContainerPath: "/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:ro",
+		},
+		{
+			LocalPath:     filepath.Join(usrRoot, "db", "logs.sql"),
+			Data:          LogsSQL,
+			Perm:          0o444,
+			ContainerPath: "/docker-entrypoint-initdb.d/migrations/99-logs.sql:ro",
+		},
+		{
+			LocalPath:     filepath.Join(usrRoot, "db", "pooler.sql"),
+			Data:          PoolerSQL,
+			Perm:          0o444,
+			ContainerPath: "/docker-entrypoint-initdb.d/migrations/99-pooler.sql:ro",
+		},
+	}
+}

@@ -7,12 +7,12 @@ import (
 	"runtime"
 )
 
-// UserRoot returns a per-user, no-sudo root directory for the app.
+// GetUserRoot returns a per-user, no-sudo root directory for the app.
 //
 //	Linux/*BSD:  $XDG_CONFIG_HOME/projconf (or ~/.config/projconf)
 //	macOS:       ~/Library/Application Support/projconf
 //	Windows:     %APPDATA%\projconf
-func UserRoot() (string, error) {
+func GetUserRoot() (string, error) {
 	switch runtime.GOOS {
 	case "linux", "freebsd", "openbsd", "netbsd":
 		// Prefer XDG config dir for a consistent, user-writable root.
@@ -50,7 +50,7 @@ func UserRoot() (string, error) {
 // EnsureUserRoot creates the user root directory if it doesn't exist.
 // Uses 0755 on Unix; Windows ignores mode bits but will create the directory.
 func EnsureUserRoot() (string, error) {
-	if root, err := UserRoot(); err != nil {
+	if root, err := GetUserRoot(); err != nil {
 		return "", err
 	} else if err := os.MkdirAll(root, 0o755); err != nil {
 		return "", err
