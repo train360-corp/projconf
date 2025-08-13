@@ -3,16 +3,12 @@ package app
 import (
 	"fmt"
 	"github.com/train360-corp/projconf/internal/app/commands"
-	"github.com/train360-corp/projconf/internal/config"
 	"github.com/train360-corp/projconf/internal/fs"
 	"github.com/urfave/cli/v2"
 	"log"
 )
 
 func Get() *cli.App {
-
-	// ensure config
-	config.MustLoad()
 
 	// ensure root directory
 	if root, err := fs.EnsureUserRoot(); err != nil {

@@ -4,62 +4,45 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 )
 
 type EnvironmentVariable string
 
 const (
-	PROJCONF_SUPABASE_URL      EnvironmentVariable = "PROJCONF_SUPABASE_URL"
-	PROJCONF_SUPABASE_ANON_KEY EnvironmentVariable = "PROJCONF_SUPABASE_ANON_KEY"
+	PROJCONF_POSTGRES_PASSWORD    EnvironmentVariable = "PROJCONF_POSTGRES_PASSWORD"
+	PROJCONF_JWT_SECRET           EnvironmentVariable = "PROJCONF_JWT_SECRET"
+	PROJCONF_SUPABASE_URL         EnvironmentVariable = "PROJCONF_SUPABASE_URL"
+	PROJCONF_SUPABASE_ANON_KEY    EnvironmentVariable = "PROJCONF_SUPABASE_ANON_KEY"
+	PROJCONF_SUPABASE_SERVICE_KEY EnvironmentVariable = "PROJCONF_SUPABASE_SERVICE_KEY"
 )
 
-type runtimeEnvironment struct {
-	values map[EnvironmentVariable]string
-}
+type RuntimeEnvironment map[EnvironmentVariable]string
 
-var (
-	instance *runtimeEnvironment
-	once     sync.Once
-)
-
-// getConfig returns the singleton instance of envConfig
-func getConfig() *runtimeEnvironment {
-	once.Do(func() {
-		instance = &runtimeEnvironment{
-			values: map[EnvironmentVariable]string{
-				PROJCONF_SUPABASE_URL:      os.Getenv(string(PROJCONF_SUPABASE_URL)),
-				PROJCONF_SUPABASE_ANON_KEY: os.Getenv(string(PROJCONF_SUPABASE_ANON_KEY)),
-			},
-		}
-		mustLoad()
-	})
-	return instance
-}
-
-func mustLoadVariable(variable EnvironmentVariable) {
-	switch variable {
-	case PROJCONF_SUPABASE_URL:
-	case PROJCONF_SUPABASE_ANON_KEY:
-		if strings.TrimSpace(os.Getenv(string(variable))) == "" {
-			panic(fmt.Sprintf("environment variable %s is required", variable))
-		}
-	default:
-		panic(fmt.Sprintf("[mustLoad] unhandled environment variable: %s", variable))
+// GetConfig returns the singleton instance of envConfig
+func GetConfig() RuntimeEnvironment {
+	return RuntimeEnvironment{
+		PROJCONF_POSTGRES_PASSWORD:    os.Getenv(string(PROJCONF_POSTGRES_PASSWORD)),
+		PROJCONF_JWT_SECRET:           os.Getenv(string(PROJCONF_JWT_SECRET)),
+		PROJCONF_SUPABASE_URL:         os.Getenv(string(PROJCONF_SUPABASE_URL)),
+		PROJCONF_SUPABASE_ANON_KEY:    os.Getenv(string(PROJCONF_SUPABASE_ANON_KEY)),
+		PROJCONF_SUPABASE_SERVICE_KEY: os.Getenv(string(PROJCONF_SUPABASE_SERVICE_KEY)),
 	}
 }
 
-// mustLoad requires certain environment variables to be set
-func mustLoad() {
-	mustLoadVariable(PROJCONF_SUPABASE_URL)
-	mustLoadVariable(PROJCONF_SUPABASE_ANON_KEY)
-}
+func MustLoad(variable EnvironmentVariable, variables ...EnvironmentVariable) {
 
-func MustLoad() {
-	getConfig()
+	vars := []EnvironmentVariable{variable}
+	vars = append(vars, variables...)
+	config := GetConfig()
+
+	for _, envVar := range vars {
+		if strings.TrimSpace(config[envVar]) == "" {
+			panic(fmt.Sprintf("environment variable '%s' is required but not set", envVar))
+		}
+	}
 }
 
 // Get returns the value of the environment variable
 func Get(key EnvironmentVariable) string {
-	return getConfig().values[key]
+	return GetConfig()[key]
 }

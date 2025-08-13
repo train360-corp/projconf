@@ -2,17 +2,13 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	_ "embed"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/train360-corp/projconf/internal/docker/types"
 	"github.com/train360-corp/projconf/internal/fs"
-	"log"
-	"net/url"
-	"os"
+	"io"
 	"os/exec"
 	"path/filepath"
 	"time"
@@ -42,8 +38,34 @@ var PoolerSQL []byte
 type Service struct {
 }
 
-func (srvc Service) WaitFor() error {
-	exec.Command("pg_isready", "-h", "127.0.0.1").Run()
+const ContainerName = "projconf-internal-supabase-db"
+
+func (srvc Service) WaitFor(parent context.Context) error {
+	ctx, cancel := context.WithTimeout(parent, 30*time.Second)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New(fmt.Sprintf("timeout waiting for database"))
+		default:
+		}
+
+		cmd := exec.CommandContext(ctx, "pg_isready", "-h", "127.0.0.1", "-U", "postgres")
+		cmd.Stderr = io.Discard
+		cmd.Stdout = io.Discard
+		cmd.Stdin = nil
+		if err := cmd.Run(); err == nil {
+			return nil
+		}
+
+		// Retry after 5 seconds
+		select {
+		case <-time.After(5 * time.Second):
+		case <-ctx.Done():
+			return fmt.Errorf("timed out waiting for Postgres: %w", ctx.Err())
+		}
+	}
 }
 
 func (srvc Service) GetDisplay() string {
@@ -55,8 +77,14 @@ func (srvc Service) Run(sharedEvn *types.SharedEvn) error {
 	userRoot, _ := fs.GetUserRoot()
 
 	args := []string{
-		"run", "--rm", "-it",
-		"--name", fmt.Sprintf("projconf-supabase-db-%s", uuid.New().String()),
+		"run",
+		"--rm",
+		"--name", ContainerName,
+		"--label", "com.docker.compose.project=projconf",
+		"--label", "com.docker.compose.service=db",
+		"--label", "com.docker.compose.version=2.0",
+		"--network", "projconf-net",
+		"--network-alias", "db",
 		"-e", "POSTGRES_HOST=/var/run/postgresql",
 		"-e", "PGPORT=5432",
 		"-e", "POSTGRES_PORT=5432",
@@ -87,9 +115,9 @@ func (srvc Service) Run(sharedEvn *types.SharedEvn) error {
 	)
 
 	cmd := exec.Command("docker", args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = nil
-	cmd.Stderr = os.Stderr
+	cmd.Stdin = nil
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
 
 	if err := cmd.Run(); err != nil {
 		return errors.New(fmt.Sprintf("failed to run docker command: %s", err))

@@ -8,6 +8,7 @@ import (
 	"github.com/train360-corp/projconf/internal/config"
 	"github.com/train360-corp/projconf/internal/supabase/database"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -57,6 +58,7 @@ func (c *Client) request(config *requestConfig) (*http.Response, error) {
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.config.AnonKey))
+	req.Header.Add("apikey", c.config.AnonKey)
 	req.Header.Add("x-client-secret-id", c.auth.Id)
 	req.Header.Add("x-client-secret", c.auth.Secret)
 	if config.single {
@@ -83,13 +85,14 @@ func (c *Client) GetSelf() (*database.PublicClientsSelect, error) {
 		}
 		defer res.Body.Close()
 
-		if res.StatusCode != http.StatusOK {
-			return nil, errors.New("unable to find client")
-		}
-
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return nil, err
+		}
+
+		if res.StatusCode != http.StatusOK {
+			log.Println(string(body))
+			return nil, errors.New("unable to find client")
 		}
 
 		var clientObj database.PublicClientsSelect

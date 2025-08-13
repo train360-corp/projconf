@@ -3,14 +3,19 @@ package commands
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
+	"github.com/train360-corp/projconf/internal/config"
 	"github.com/train360-corp/projconf/internal/docker"
-	"github.com/train360-corp/projconf/internal/docker/services/database"
 	"github.com/train360-corp/projconf/internal/docker/types"
 	"github.com/train360-corp/projconf/internal/server"
 	"github.com/urfave/cli/v2"
+	"io"
 	"log"
+	"net/http"
+	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
 )
 
@@ -37,8 +42,13 @@ func randomString(n int) string {
 	return string(bytes)
 }
 
-func serveCommand() *cli.Command {
+const (
+	projectLabelKey   = "com.docker.compose.project"
+	projectLabelValue = "projconf"
+	networkName       = "projconf-net"
+)
 
+func serveCommand() *cli.Command {
 	cfg := server.Config{}
 
 	return &cli.Command{
@@ -61,61 +71,151 @@ func serveCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-
-			// create http server
+			// Create HTTP server
 			srv, err := server.NewHTTPServer(cfg)
 			if err != nil {
 				return err
 			}
+
+			// Handle SIGINT/SIGTERM
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
 
-			// channel to capture goroutine errors
-			errCh := make(chan error, 2)
-
+			// Prepare env for services
+			config.MustLoad(
+				config.PROJCONF_POSTGRES_PASSWORD,
+				config.PROJCONF_JWT_SECRET,
+				config.PROJCONF_SUPABASE_ANON_KEY,
+				config.PROJCONF_SUPABASE_SERVICE_KEY,
+			)
 			env := types.SharedEvn{
-				PGPASSWORD: randomString(32),
-				JWT_SECRET: randomString(32),
+				PGPASSWORD:  config.Get(config.PROJCONF_POSTGRES_PASSWORD),
+				JWT_SECRET:  config.Get(config.PROJCONF_JWT_SECRET),
+				ANON_KEY:    config.Get(config.PROJCONF_SUPABASE_ANON_KEY),
+				SERVICE_KEY: config.Get(config.PROJCONF_SUPABASE_SERVICE_KEY),
 			}
 
-			// start Docker services in the foreground (blocking) in its own goroutine.
-			go func() {
-				log.Println("starting Docker services...")
-				if err := docker.RunDockerServices(env); err != nil {
-					errCh <- fmt.Errorf("docker services error: %w", err)
-					return
+			services := docker.GetServices()
+			errCh := make(chan error, len(services)+2)
+
+			// --- Clean start (blocking, cancel-aware)
+			log.Println("cleaning up old containers and network...")
+
+			if err := removeProjectContainers(ctx, projectLabelKey, projectLabelValue); err != nil {
+				return fmt.Errorf("cleanup containers: %w", err)
+			}
+			if err := removeNetworkIfExists(ctx, networkName); err != nil {
+				return fmt.Errorf("remove network: %w", err)
+			}
+			if err := ensureNetwork(ctx, networkName); err != nil {
+				return fmt.Errorf("create network: %w", err)
+			}
+
+			// --- Start Docker services
+			log.Println("starting Docker services...")
+			for _, service := range services {
+				svc := service // capture
+
+				go func(s types.Service) {
+					if err := docker.RunService(s, env); err != nil {
+						errCh <- fmt.Errorf("docker service %q error: %w", s.GetDisplay(), err)
+						return
+					}
+				}(svc)
+
+				// Gate each service on readiness; cancels immediately on SIGINT/SIGTERM.
+				if err := svc.WaitFor(ctx); err != nil {
+					return fmt.Errorf("error while waiting for %q: %w", svc.GetDisplay(), err)
 				}
-				// if StartServices ever returns nil, that means Docker foreground exited cleanly.
-				errCh <- fmt.Errorf("docker services exited")
-			}()
 
-			if err := (database.Service{}).WaitFor(ctx, env); err != nil {
-				return fmt.Errorf("an error occurred while waiting for database: %w", err)
+				log.Printf("started %q service\n", svc.GetDisplay())
 			}
 
-			// start HTTP server (foreground) in its own goroutine.
+			// --- Start HTTP server
 			go func() {
 				addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-				log.Printf("HTTP server listening on http://%s", addr)
-				errCh <- srv.Serve()
+				log.Printf("HTTP server listening on http://%s\n", addr)
+				if err := srv.Serve(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+					errCh <- fmt.Errorf("http server error: %w", err)
+				}
 			}()
 
-			// wait for either a signal or an error from either goroutine.
-			select {
-			case <-ctx.Done():
+			// --- Dedicated shutdown goroutine
+			doneCh := make(chan struct{})
+			go func() {
+				<-ctx.Done()
 				log.Println("Shutdown signal received; shutting down HTTP server...")
-				// graceful HTTP shutdown; Docker foreground will be terminated by process exit.
-				if err := srv.Shutdown(context.Background()); err != nil {
-					return err
-				}
-				return nil
+				_ = srv.Shutdown(context.Background())
+				close(doneCh)
+			}()
 
+			// --- Wait for graceful shutdown or a real error
+			select {
+			case <-doneCh:
+				return nil
 			case err := <-errCh:
-				// if Docker dies or HTTP Serve returns an error, stop the server and exit.
-				log.Println("Service error:", err)
 				_ = srv.Shutdown(context.Background())
 				return err
 			}
 		},
 	}
+}
+
+// removeProjectContainers stops & removes any containers with the given project label.
+func removeProjectContainers(ctx context.Context, labelKey, labelValue string) error {
+	ids, err := listContainersByLabel(ctx, labelKey, labelValue)
+	if err != nil {
+		return err
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	rmArgs := append([]string{"rm", "-f"}, ids...)
+	return runDocker(ctx, rmArgs...)
+}
+
+func listContainersByLabel(ctx context.Context, labelKey, labelValue string) ([]string, error) {
+	out, err := exec.CommandContext(
+		ctx, "docker", "ps", "-aq", "--filter", "label="+labelKey+"="+labelValue,
+	).Output()
+	if err != nil {
+		return nil, fmt.Errorf("list containers: %w", err)
+	}
+	return strings.Fields(string(out)), nil
+}
+
+func removeNetworkIfExists(ctx context.Context, name string) error {
+	// Try remove; ignore "not found" errors.
+	cmd := exec.CommandContext(ctx, "docker", "network", "rm", name)
+	cmd.Stdout, cmd.Stderr = io.Discard, io.Discard
+	_ = cmd.Run() // ignore result
+	return nil
+}
+
+func ensureNetwork(ctx context.Context, name string) error {
+	// If exists, done.
+	out, err := exec.CommandContext(ctx, "docker", "network", "ls", "-q", "--filter", "name=^"+name+"$").Output()
+	if err == nil && strings.TrimSpace(string(out)) != "" {
+		return nil
+	}
+	// Create it.
+	cmd := exec.CommandContext(ctx, "docker", "network", "create", name)
+	cmd.Stdout, cmd.Stderr = io.Discard, io.Discard
+	if err := cmd.Run(); err != nil {
+		// If a race created it meanwhile, treat as success.
+		if ierr := exec.CommandContext(ctx, "docker", "network", "inspect", name).Run(); ierr == nil {
+			return nil
+		}
+		return fmt.Errorf("unable to create docker network %q: %w", name, err)
+	}
+	return nil
+}
+
+func runDocker(ctx context.Context, args ...string) error {
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Stdout, cmd.Stderr = io.Discard, io.Discard
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("docker %v failed: %w", args, err)
+	}
+	return nil
 }

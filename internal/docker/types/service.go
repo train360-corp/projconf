@@ -1,12 +1,15 @@
 package types
 
 import (
+	"context"
 	"os"
 )
 
 type SharedEvn struct {
-	PGPASSWORD string
-	JWT_SECRET string
+	PGPASSWORD  string
+	JWT_SECRET  string
+	ANON_KEY    string
+	SERVICE_KEY string
 }
 
 type Writeable struct {
@@ -20,5 +23,5 @@ type Service interface {
 	GetDisplay() string
 	Run(evn *SharedEvn) error
 	GetWriteables() []Writeable
-	WaitFor() error
+	WaitFor(ctx context.Context) error
 }
