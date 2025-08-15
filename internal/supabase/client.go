@@ -32,7 +32,7 @@ func GetWithAuth(config *Config, authConfig *AuthConfig) *Client {
 
 func GetFromContext(ctx *gin.Context) *Client {
 
-	appCfg, err := config.Read()
+	appCfg, err := config.Load()
 	if err != nil {
 		panic(errors.New(fmt.Sprintf("read config error: %v", err)))
 	}

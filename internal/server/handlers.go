@@ -3,12 +3,26 @@ package server
 import (
 	"github.com/gin-gonic/gin"
 	openapitypes "github.com/oapi-codegen/runtime/types"
+	"github.com/train360-corp/projconf/internal/config"
 	"github.com/train360-corp/projconf/internal/supabase"
 	"net/http"
+	"time"
 )
 
 // RouteHandlers implements api.ServerInterface (generated).
 type RouteHandlers struct{}
+
+func (s *RouteHandlers) GetV1AdminHealth(c *gin.Context) {
+	c.JSON(http.StatusOK, struct {
+		Status    string `json:"status"`
+		Timestamp string `json:"timestamp"`
+		Version   string `json:"version"`
+	}{
+		Status:    "ok",
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Version:   config.Version,
+	})
+}
 
 func (s *RouteHandlers) GetV1ClientsSelf(c *gin.Context) {
 

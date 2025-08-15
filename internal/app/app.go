@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/train360-corp/projconf/internal/app/commands"
+	"github.com/train360-corp/projconf/internal/config"
 	"github.com/train360-corp/projconf/internal/fs"
 	"github.com/urfave/cli/v2"
 	"log"
@@ -22,7 +23,7 @@ func Get() *cli.App {
 	return &cli.App{
 		Name:    "projconf",
 		Usage:   "A CLI utility for ProjConf",
-		Version: Version,
+		Version: config.Version,
 		Commands: []*cli.Command{
 			commands.ServerCommand(),
 			commands.AuthCommand(),

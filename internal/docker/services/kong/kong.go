@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"github.com/train360-corp/projconf/internal/docker/types"
 	"github.com/train360-corp/projconf/internal/fs"
-	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 )
 
@@ -24,11 +22,11 @@ func (s Service) GetDisplay() string {
 	return "Kong"
 }
 
-func (s Service) Run(evn *types.SharedEvn) error {
+func (s Service) GetArgs(evn *types.SharedEnv) []string {
 
 	root, err := fs.GetTempRoot()
 	if err != nil {
-		return errors.New(fmt.Sprintf("could not get temp root directory: %v", err))
+		panic(errors.New(fmt.Sprintf("could not get temp root directory: %v", err)))
 	}
 
 	cfg := types.Writeable{
@@ -50,12 +48,10 @@ func (s Service) Run(evn *types.SharedEvn) error {
 	defer os.Remove(cfg.LocalPath)
 
 	if err := fs.WriteDependencies(cfg.LocalPath, cfg.Data, cfg.Perm); err != nil {
-		return errors.New(fmt.Sprintf("could not write kong config: %v", err))
+		panic(errors.New(fmt.Sprintf("could not write kong config: %v", err)))
 	}
 
 	args := []string{
-		"run",
-		"--rm",
 		"--name", ContainerName,
 		"--label", "com.docker.compose.project=projconf",
 		"--label", "com.docker.compose.service=kong",
@@ -80,18 +76,7 @@ func (s Service) Run(evn *types.SharedEvn) error {
 		"docker-start",
 	}
 
-	cmd := exec.Command("docker", args...)
-	cmd.Stdin = nil
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-	//cmd.Stdout = os.Stdout
-	//cmd.Stderr = os.Stdout
-
-	if err := cmd.Run(); err != nil {
-		return errors.New(fmt.Sprintf("failed to run docker command: %s", err))
-	}
-
-	return nil
+	return args
 }
 
 func (s Service) GetWriteables() []types.Writeable {

@@ -1,3 +1,3 @@
-package app
+package config
 
 var Version = ""

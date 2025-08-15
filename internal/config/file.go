@@ -1,11 +1,11 @@
 package config
 
 import (
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/train360-corp/projconf/internal/fs"
+	"github.com/train360-corp/projconf/internal/utils"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -43,22 +43,9 @@ type DiskConfig struct {
 	Supabase DiskConfigSupabase `yaml:"supabase"`
 }
 
-// randomString returns a secure random string of length n.
-func randomString(n int) string {
-	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	bytes := make([]byte, n)
-	if _, err := rand.Read(bytes); err != nil {
-		panic(err)
-	}
-	for i, b := range bytes {
-		bytes[i] = chars[b%byte(len(chars))]
-	}
-	return string(bytes)
-}
-
 func genDefaultConfig() *DiskConfig {
 
-	jwtSecret := randomString(32)
+	jwtSecret := utils.RandomString(32)
 	iat := time.Now().Unix()
 	exp := time.Now().AddDate(10, 0, 0).Unix()
 
@@ -92,7 +79,7 @@ func genDefaultConfig() *DiskConfig {
 				Private: privKey,
 			},
 			Db: DiskConfigSupabaseDb{
-				Password: randomString(32),
+				Password: utils.RandomString(32),
 			},
 		},
 	}
@@ -106,8 +93,8 @@ func getConfigPath() string {
 	return filepath.Join(path, "config.yaml")
 }
 
-// Read loads the local config file (and creates one if one does not exist)
-func Read() (*DiskConfig, error) {
+// Load loads the local config file (and creates one if one does not exist)
+func Load() (*DiskConfig, error) {
 
 	path := getConfigPath()
 	if !fs.FileExists(path) {

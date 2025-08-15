@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/train360-corp/projconf/internal/config"
 	"github.com/train360-corp/projconf/internal/docker"
+	"github.com/train360-corp/projconf/internal/docker/services/database"
 	"github.com/train360-corp/projconf/internal/docker/types"
+	"github.com/train360-corp/projconf/internal/fs"
 	"github.com/train360-corp/projconf/internal/server"
 	"github.com/urfave/cli/v2"
 	"io"
@@ -24,6 +26,7 @@ func ServerCommand() *cli.Command {
 		Usage: "commands to serve a ProjConf server",
 		Subcommands: []*cli.Command{
 			serveCommand(),
+			updateCommand(),
 		},
 	}
 }
@@ -33,6 +36,59 @@ const (
 	projectLabelValue = "projconf"
 	networkName       = "projconf-net"
 )
+
+func updateCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "update",
+		Usage: "update a ProjConf server",
+		Action: func(c *cli.Context) error {
+
+			// honor existing context and add SIGINT/SIGTERM
+			ctx, stop := signal.NotifyContext(c.Context, syscall.SIGINT, syscall.SIGTERM)
+			defer stop()
+
+			// --- Clean start (blocking, cancel-aware)
+			if err := mustCleanStart(ctx); err != nil {
+				return err
+			}
+
+			// load config once, handle error
+			cfg, err := config.Load()
+			if err != nil {
+				return fmt.Errorf("read config: %w", err)
+			}
+			env := types.SharedEnv{ // (or SharedEnv if that's the real name)
+				PGPASSWORD:  cfg.Supabase.Db.Password,
+				JWT_SECRET:  cfg.Supabase.JwtSecret,
+				ANON_KEY:    cfg.Supabase.Keys.Public,
+				SERVICE_KEY: cfg.Supabase.Keys.Private,
+			}
+
+			db := &database.Service{}
+			runErrCh := make(chan error, 1)
+			go func() {
+				runErrCh <- docker.RunService(ctx, db, env)
+			}()
+			if err := db.WaitFor(ctx); err != nil {
+				return fmt.Errorf("waiting for %q: %w", db.GetDisplay(), err)
+			}
+
+			// Non-blocking check: if RunService already errored, surface it.
+			select {
+			case err := <-runErrCh:
+				if err != nil {
+					return fmt.Errorf("docker service %q error: %w", db.GetDisplay(), err)
+				}
+			default:
+			}
+
+			// TODO: apply migrations here (ctx-aware)
+			fs.GetTempRoot()
+
+			return nil
+		},
+	}
+}
 
 func serveCommand() *cli.Command {
 	srvCfg := server.Config{}
@@ -57,6 +113,9 @@ func serveCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
+
+			globalCfg := config.GetGlobal()
+
 			// Create HTTP server
 			srv, err := server.NewHTTPServer(srvCfg)
 			if err != nil {
@@ -67,8 +126,8 @@ func serveCommand() *cli.Command {
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
 
-			cfg, err := config.Read()
-			env := types.SharedEvn{
+			cfg, _ := config.Load()
+			env := types.SharedEnv{
 				PGPASSWORD:  cfg.Supabase.Db.Password,
 				JWT_SECRET:  cfg.Supabase.JwtSecret,
 				ANON_KEY:    cfg.Supabase.Keys.Public,
@@ -79,16 +138,8 @@ func serveCommand() *cli.Command {
 			errCh := make(chan error, len(services)+2)
 
 			// --- Clean start (blocking, cancel-aware)
-			log.Println("cleaning up old containers and network...")
-
-			if err := removeProjectContainers(ctx, projectLabelKey, projectLabelValue); err != nil {
-				return fmt.Errorf("cleanup containers: %w", err)
-			}
-			if err := removeNetworkIfExists(ctx, networkName); err != nil {
-				return fmt.Errorf("remove network: %w", err)
-			}
-			if err := ensureNetwork(ctx, networkName); err != nil {
-				return fmt.Errorf("create network: %w", err)
+			if err := mustCleanStart(ctx); err != nil {
+				return err
 			}
 
 			// --- Start Docker services
@@ -97,7 +148,7 @@ func serveCommand() *cli.Command {
 				svc := service // capture
 
 				go func(s types.Service) {
-					if err := docker.RunService(s, env); err != nil {
+					if err := docker.RunService(ctx, s, env); err != nil {
 						errCh <- fmt.Errorf("docker service %q error: %w", s.GetDisplay(), err)
 						return
 					}
@@ -115,6 +166,7 @@ func serveCommand() *cli.Command {
 			go func() {
 				addr := fmt.Sprintf("%s:%d", srvCfg.Host, srvCfg.Port)
 				log.Printf("HTTP server listening on http://%s\n", addr)
+				log.Println(fmt.Sprintf("admin access token: %s", globalCfg.AdminAccessKey))
 				if err := srv.Serve(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 					errCh <- fmt.Errorf("http server error: %w", err)
 				}
@@ -139,6 +191,21 @@ func serveCommand() *cli.Command {
 			}
 		},
 	}
+}
+
+func mustCleanStart(ctx context.Context) error {
+	// --- Clean start (blocking, cancel-aware)
+	log.Println("cleaning up old containers and network...")
+	if err := removeProjectContainers(ctx, projectLabelKey, projectLabelValue); err != nil {
+		return fmt.Errorf("cleanup containers: %w", err)
+	}
+	if err := removeNetworkIfExists(ctx, networkName); err != nil {
+		return fmt.Errorf("remove network: %w", err)
+	}
+	if err := ensureNetwork(ctx, networkName); err != nil {
+		return fmt.Errorf("create network: %w", err)
+	}
+	return nil
 }
 
 // removeProjectContainers stops & removes any containers with the given project label.

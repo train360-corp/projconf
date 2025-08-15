@@ -72,13 +72,11 @@ func (srvc Service) GetDisplay() string {
 	return "Database (Postgres)"
 }
 
-func (srvc Service) Run(sharedEvn *types.SharedEvn) error {
+func (srvc Service) GetArgs(sharedEvn *types.SharedEnv) []string {
 
 	userRoot, _ := fs.GetUserRoot()
 
 	args := []string{
-		"run",
-		"--rm",
 		"--name", ContainerName,
 		"--label", "com.docker.compose.project=projconf",
 		"--label", "com.docker.compose.service=db",
@@ -114,16 +112,7 @@ func (srvc Service) Run(sharedEvn *types.SharedEvn) error {
 		"-c", "max_wal_senders=0",
 	)
 
-	cmd := exec.Command("docker", args...)
-	cmd.Stdin = nil
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-
-	if err := cmd.Run(); err != nil {
-		return errors.New(fmt.Sprintf("failed to run docker command: %s", err))
-	}
-
-	return nil
+	return args
 }
 
 func (srvc Service) GetWriteables() []types.Writeable {

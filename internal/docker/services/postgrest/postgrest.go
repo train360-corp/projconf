@@ -2,12 +2,9 @@ package postgrest
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/train360-corp/projconf/internal/docker/services/database"
 	"github.com/train360-corp/projconf/internal/docker/types"
-	"io"
-	"os/exec"
 )
 
 type Service struct{}
@@ -18,10 +15,8 @@ func (s Service) GetDisplay() string {
 	return "Postgrest"
 }
 
-func (s Service) Run(evn *types.SharedEvn) error {
-	args := []string{
-		"run",
-		"--rm",
+func (s Service) GetArgs(evn *types.SharedEnv) []string {
+	return []string{
 		"--name", ContainerName,
 		"--label", "com.docker.compose.project=projconf",
 		"--label", "com.docker.compose.service=postgrest",
@@ -38,17 +33,6 @@ func (s Service) Run(evn *types.SharedEvn) error {
 		"postgrest/postgrest:v12.2.12",
 		"postgrest",
 	}
-
-	cmd := exec.Command("docker", args...)
-	cmd.Stdin = nil
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-
-	if err := cmd.Run(); err != nil {
-		return errors.New(fmt.Sprintf("failed to run docker command: %s", err))
-	}
-
-	return nil
 }
 
 func (s Service) GetWriteables() []types.Writeable {

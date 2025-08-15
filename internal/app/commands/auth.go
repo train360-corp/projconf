@@ -41,7 +41,7 @@ func AuthCommand() *cli.Command {
 				},
 				Action: func(ctx *cli.Context) error {
 
-					cfg, err := config.Read()
+					cfg, err := config.Load()
 					if err != nil {
 						return err
 					}

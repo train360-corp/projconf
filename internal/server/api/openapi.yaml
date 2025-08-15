@@ -3,6 +3,27 @@ info:
   title: Secrets API
   version: 1.0.0
 paths:
+  /v1/admin/health:
+    get:
+      summary: Get health
+      description: Returns a health-check on the server
+      responses:
+        '200':
+          description: client object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
   /v1/clients/_self:
     get:
       summary: Get self
@@ -69,16 +90,3 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden
-components:
-  securitySchemes:
-    ClientSecretId:
-      type: apiKey
-      in: header
-      name: x-client-secret-id
-    ClientSecret:
-      type: apiKey
-      in: header
-      name: x-client-secret
-security:
-  - ClientSecretId: [ ]
-    ClientSecret: [ ]

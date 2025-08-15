@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-type SharedEvn struct {
+type SharedEnv struct {
 	PGPASSWORD  string
 	JWT_SECRET  string
 	ANON_KEY    string
@@ -21,7 +21,7 @@ type Writeable struct {
 
 type Service interface {
 	GetDisplay() string
-	Run(evn *SharedEvn) error
+	GetArgs(env *SharedEnv) []string
 	GetWriteables() []Writeable
 	WaitFor(ctx context.Context) error
 }
