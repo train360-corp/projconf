@@ -31,3 +31,28 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "v${{ needs.version.outputs.version }}" -m "Release v${{ needs.version.outputs.version }}"
           git push origin "v${{ needs.version.outputs.version }}"
+
+  build:
+    needs:
+      - tag
+      - version
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        id: goreleaser
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean --skip=validate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_REPO_SECRET: ${{ secrets.HOMEBREW_TAP_REPO_SECRET }}
