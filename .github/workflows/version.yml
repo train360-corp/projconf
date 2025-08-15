@@ -2,6 +2,7 @@ on:
   push:
     paths:
       - 'version.json'
+      - '.github/workflows/version.yml'
 
 jobs:
   version:
