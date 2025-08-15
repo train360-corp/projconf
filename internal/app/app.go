@@ -11,10 +11,8 @@ import (
 func Get() *cli.App {
 
 	// ensure root directory
-	if root, err := fs.EnsureUserRoot(); err != nil {
+	if _, err := fs.EnsureUserRoot(); err != nil {
 		log.Fatal(fmt.Sprintf("failed to ensure system root: %s", err))
-	} else {
-		log.Printf("loaded from \"%s\"\n", root)
 	}
 
 	cli.VersionPrinter = func(ctx *cli.Context) {
@@ -27,6 +25,7 @@ func Get() *cli.App {
 		Version: Version,
 		Commands: []*cli.Command{
 			commands.ServerCommand(),
+			commands.AuthCommand(),
 		},
 	}
 }

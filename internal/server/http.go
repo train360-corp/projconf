@@ -20,6 +20,12 @@ type HTTPServer struct {
 }
 
 func NewHTTPServer(cfg Config) (*HTTPServer, error) {
+
+	appCfg, err := config.Read()
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("read config error: %v", err))
+	}
+
 	switch cfg.Mode {
 	case gin.DebugMode, gin.ReleaseMode, gin.TestMode:
 		gin.SetMode(cfg.Mode)
@@ -45,8 +51,8 @@ func NewHTTPServer(cfg Config) (*HTTPServer, error) {
 		}
 
 		sb := supabase.GetWithAuth(&supabase.Config{
-			Url:     config.Get(config.PROJCONF_SUPABASE_URL),
-			AnonKey: config.Get(config.PROJCONF_SUPABASE_ANON_KEY),
+			Url:     appCfg.Supabase.Url,
+			AnonKey: appCfg.Supabase.Keys.Public,
 		}, &supabase.AuthConfig{
 			Id:     id,
 			Secret: sec,

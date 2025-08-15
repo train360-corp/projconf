@@ -7,6 +7,19 @@ import (
 	"runtime"
 )
 
+// FileExists checks whether a file exists and is accessible by the runtime
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true // file exists
+	}
+	if os.IsNotExist(err) {
+		return false // definitely does not exist
+	}
+	// Something else went wrong (e.g., permission denied)
+	return false
+}
+
 // GetUserRoot returns a per-user, no-sudo root directory for the app.
 //
 //	Linux/*BSD:  $XDG_CONFIG_HOME/projconf (or ~/.config/projconf)

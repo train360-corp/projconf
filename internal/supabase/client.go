@@ -31,9 +31,15 @@ func GetWithAuth(config *Config, authConfig *AuthConfig) *Client {
 }
 
 func GetFromContext(ctx *gin.Context) *Client {
+
+	appCfg, err := config.Read()
+	if err != nil {
+		panic(errors.New(fmt.Sprintf("read config error: %v", err)))
+	}
+
 	return GetWithAuth(&Config{
-		Url:     config.Get(config.PROJCONF_SUPABASE_URL),
-		AnonKey: config.Get(config.PROJCONF_SUPABASE_ANON_KEY),
+		Url:     appCfg.Supabase.Url,
+		AnonKey: appCfg.Supabase.Keys.Public,
 	}, &AuthConfig{
 		Id:     ctx.GetHeader("x-client-secret-id"),
 		Secret: ctx.GetHeader("x-client-secret"),

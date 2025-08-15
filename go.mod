@@ -5,10 +5,12 @@ go 1.23.3
 require (
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/gin-gonic/gin v1.10.1
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/oapi-codegen/gin-middleware v1.0.2
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/urfave/cli/v2 v2.27.7
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -62,5 +64,4 @@ require (
 	golang.org/x/tools v0.35.0 // indirect
 	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

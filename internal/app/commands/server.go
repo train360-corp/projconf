@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"github.com/train360-corp/projconf/internal/config"
@@ -29,19 +28,6 @@ func ServerCommand() *cli.Command {
 	}
 }
 
-// randomString returns a secure random string of length n.
-func randomString(n int) string {
-	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	bytes := make([]byte, n)
-	if _, err := rand.Read(bytes); err != nil {
-		panic(err)
-	}
-	for i, b := range bytes {
-		bytes[i] = chars[b%byte(len(chars))]
-	}
-	return string(bytes)
-}
-
 const (
 	projectLabelKey   = "com.docker.compose.project"
 	projectLabelValue = "projconf"
@@ -49,7 +35,7 @@ const (
 )
 
 func serveCommand() *cli.Command {
-	cfg := server.Config{}
+	srvCfg := server.Config{}
 
 	return &cli.Command{
 		Name:  "serve",
@@ -59,20 +45,20 @@ func serveCommand() *cli.Command {
 				Name:        "host",
 				Usage:       "host interface to bind",
 				Value:       "0.0.0.0",
-				Destination: &cfg.Host,
+				Destination: &srvCfg.Host,
 				EnvVars:     []string{"PROJCONF_HOST"},
 			},
 			&cli.IntFlag{
 				Name:        "port",
 				Usage:       "port to listen on",
 				Value:       8080,
-				Destination: &cfg.Port,
+				Destination: &srvCfg.Port,
 				EnvVars:     []string{"PROJCONF_PORT"},
 			},
 		},
 		Action: func(c *cli.Context) error {
 			// Create HTTP server
-			srv, err := server.NewHTTPServer(cfg)
+			srv, err := server.NewHTTPServer(srvCfg)
 			if err != nil {
 				return err
 			}
@@ -81,18 +67,12 @@ func serveCommand() *cli.Command {
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
 
-			// Prepare env for services
-			config.MustLoad(
-				config.PROJCONF_POSTGRES_PASSWORD,
-				config.PROJCONF_JWT_SECRET,
-				config.PROJCONF_SUPABASE_ANON_KEY,
-				config.PROJCONF_SUPABASE_SERVICE_KEY,
-			)
+			cfg, err := config.Read()
 			env := types.SharedEvn{
-				PGPASSWORD:  config.Get(config.PROJCONF_POSTGRES_PASSWORD),
-				JWT_SECRET:  config.Get(config.PROJCONF_JWT_SECRET),
-				ANON_KEY:    config.Get(config.PROJCONF_SUPABASE_ANON_KEY),
-				SERVICE_KEY: config.Get(config.PROJCONF_SUPABASE_SERVICE_KEY),
+				PGPASSWORD:  cfg.Supabase.Db.Password,
+				JWT_SECRET:  cfg.Supabase.JwtSecret,
+				ANON_KEY:    cfg.Supabase.Keys.Public,
+				SERVICE_KEY: cfg.Supabase.Keys.Private,
 			}
 
 			services := docker.GetServices()
@@ -133,7 +113,7 @@ func serveCommand() *cli.Command {
 
 			// --- Start HTTP server
 			go func() {
-				addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+				addr := fmt.Sprintf("%s:%d", srvCfg.Host, srvCfg.Port)
 				log.Printf("HTTP server listening on http://%s\n", addr)
 				if err := srv.Serve(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 					errCh <- fmt.Errorf("http server error: %w", err)

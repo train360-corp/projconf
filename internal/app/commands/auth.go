@@ -1,30 +1,92 @@
 package commands
 
 import (
-	"github.com/train360-corp/projconf/internal/supabase"
+	"fmt"
+	"github.com/train360-corp/projconf/internal/config"
+	"github.com/train360-corp/projconf/internal/validators"
 	"github.com/urfave/cli/v2"
+	"reflect"
+	"strings"
 )
 
 func AuthCommand() *cli.Command {
+	flags := struct {
+		Host         string
+		ClientId     string
+		ClientSecret string
+	}{}
 	return &cli.Command{
 		Name:  "auth",
 		Usage: "authenticate to a ProjConf server",
 		Subcommands: []*cli.Command{
-			authCommand(),
-		},
-	}
-}
+			&cli.Command{
+				Name:  "set",
+				Usage: "update the default account settings used by the cli",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:        "host",
+						Aliases:     []string{"H"},
+						Destination: &flags.Host,
+					},
+					&cli.StringFlag{
+						Name:        "client-id",
+						Aliases:     []string{"U"},
+						Destination: &flags.ClientId,
+					},
+					&cli.StringFlag{
+						Name:        "client-secret",
+						Aliases:     []string{"P"},
+						Destination: &flags.ClientSecret,
+					},
+				},
+				Action: func(ctx *cli.Context) error {
 
-func authCommand() *cli.Command {
+					cfg, err := config.Read()
+					if err != nil {
+						return err
+					}
+					v := reflect.ValueOf(flags)
+					t := reflect.TypeOf(flags)
 
-	sb := supabase.Config{}
+					noneSet := true
+					for i := 0; i < t.NumField(); i++ {
+						field := t.Field(i)
+						value := v.Field(i)
+						if value.Kind() != reflect.Ptr {
+							switch value.Kind() {
+							case reflect.String:
+								if strings.Trim(value.String(), " ") != "" {
+									noneSet = false
+									fmt.Printf("set %s = %v\n", field.Name, value.Interface())
+									switch field.Name {
+									case "ClientId":
+										cfg.Account.Client.Id = value.String()
+									case "ClientSecret":
+										cfg.Account.Client.Secret = value.String()
+									case "Host":
+										if err := validators.ValidateHTTPHostURL(flags.Host); err != nil {
+											return cli.Exit(fmt.Sprintf("invalid host: %s (%s)", flags.Host, err.Error()), 1)
+										} else {
+											cfg.Account.Url = flags.Host
+										}
+									default:
+										panic(fmt.Errorf("string field '%s' unhandled", field.Name))
+									}
 
-	return &cli.Command{
-		Name:  "login",
-		Usage: "authenticate to a ProjConf server",
-		Flags: supabase.GetConfigFlags(&sb),
-		Action: func(c *cli.Context) error {
-			return nil
+								}
+							default:
+								panic(fmt.Errorf("invalid value type: %s", value.Kind().String()))
+							}
+						}
+					}
+
+					if noneSet {
+						return cli.Exit("no values were set", 1)
+					}
+
+					return cfg.Flush()
+				},
+			},
 		},
 	}
 }
