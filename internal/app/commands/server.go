@@ -14,6 +14,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"os/signal"
 	"strings"
@@ -42,6 +43,13 @@ func updateCommand() *cli.Command {
 		Name:  "update",
 		Usage: "update a ProjConf server",
 		Action: func(c *cli.Context) error {
+
+			tmp, err := fs.GetTempRoot()
+			if err != nil {
+				return err
+			}
+
+			defer os.RemoveAll(tmp)
 
 			// honor existing context and add SIGINT/SIGTERM
 			ctx, stop := signal.NotifyContext(c.Context, syscall.SIGINT, syscall.SIGTERM)
@@ -83,7 +91,6 @@ func updateCommand() *cli.Command {
 			}
 
 			// TODO: apply migrations here (ctx-aware)
-			fs.GetTempRoot()
 
 			return nil
 		},

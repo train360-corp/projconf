@@ -1,21 +1,11 @@
 on:
   push:
-    paths:
-      - 'version.json'
+    tags:
+      - v*
 
 jobs:
-  version:
-    uses: train360-corp/actions/.github/workflows/version-check.yml@main
-    with:
-      file-name: version.json
-      json-version-path: .version
-    secrets:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
-
   build:
     runs-on: ubuntu-24.04
-    needs:
-      - version
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -35,5 +25,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_REPO_SECRET: ${{ secrets.HOMEBREW_TAP_REPO_SECRET }}
-          GORELEASER_CURRENT_TAG: v${{ needs.version.outputs.version }}
-          GORELEASER_PREVIOUS_TAG: v${{ needs.version.outputs.previous-version }}

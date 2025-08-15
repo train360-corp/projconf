@@ -1,0 +1,29 @@
+on:
+  push:
+    paths:
+      - 'version.json'
+
+jobs:
+  version:
+    uses: train360-corp/actions/.github/workflows/version-check.yml@main
+    with:
+      file-name: version.json
+      json-version-path: .version
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  tag:
+    runs-on: ubuntu-24.04
+    needs:
+      - version
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # important so tags/history are available
+
+      - name: Create tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ needs.version.outputs.version }}" -m "Release v${{ needs.version.outputs.version }}"
+          git push origin "v${{ github.event.inputs.tag }}"
