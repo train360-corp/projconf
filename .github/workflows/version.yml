@@ -4,6 +4,9 @@ on:
       - 'version.json'
       - '.github/workflows/version.yml'
 
+permissions:
+  contents: write
+
 jobs:
   version:
     uses: train360-corp/actions/.github/workflows/version-check.yml@main
