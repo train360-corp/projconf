@@ -8,17 +8,7 @@ before:
     - go get github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
     - go get github.com/oapi-codegen/runtime@v1.1.2
     - go generate internal/server/api/doc.go
-
-builds:
-  - id: projconf
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-      - windows
-      - darwin
-    ldflags:
-      - -s -w -X github.com/train360-corp/projconf/internal/config.Version={{.Version}}
+    - tar -C ./supabase/migrations -czf ./migrations.tar.gz .
 
 changelog:
   use: github
@@ -31,6 +21,18 @@ changelog:
       order: 1
     - title: Others
       order: 999
+
+builds:
+  - id: projconf
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    ldflags:
+      - -s -w -X github.com/train360-corp/projconf/internal/config.Version={{.Version}}
+
 
 nfpms:
   - vendor: Train360, Corp.
@@ -91,7 +93,8 @@ release:
   github:
     owner: train360-corp
     name: projconf
-
+  extra_files:
+    - glob: migrations.tar.gz
   footer: >-
 
     ---
