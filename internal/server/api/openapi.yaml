@@ -84,6 +84,47 @@ paths:
         '403':
           description: Forbidden
 
+  /v1/admin/projects/{project_id}/environments:
+    post:
+      summary: Create environment
+      description: Create a new environment
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The UUID of the project.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: project name (must be unique)
+                  pattern: ^[[:alnum:] _]+$
+                  minLength: 1
+              required:
+                - name
+      responses:
+        '201':
+          description: Environment Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
   /v1/projects/{project_id}/environments/{environment_id}/secrets:
     get:
       summary: List secrets

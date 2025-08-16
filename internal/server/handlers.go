@@ -14,6 +14,32 @@ import (
 // RouteHandlers implements api.ServerInterface (generated).
 type RouteHandlers struct{}
 
+func (s *RouteHandlers) PostV1AdminProjectsProjectIdEnvironments(c *gin.Context, projectId openapitypes.UUID) {
+
+	var req struct {
+		Name string `json:"name"`
+	}
+	c.BindJSON(&req)
+
+	var id string
+	err := postgres.Insert(c, "public.environments", database.PublicEnvironmentsInsert{
+		Display:   &req.Name,
+		ProjectId: projectId.String(),
+	}, "id", &id)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+	} else {
+		c.JSON(http.StatusOK, struct {
+			Id string `json:"id"`
+		}{
+			Id: id,
+		})
+	}
+
+}
+
 func (s *RouteHandlers) PostV1AdminProjects(c *gin.Context) {
 
 	var req struct {
