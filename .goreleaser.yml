@@ -99,26 +99,26 @@ release:
 
     Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
 
-#brews:
-#  - name: supasecure
-#    download_strategy: CurlDownloadStrategy
-#    url_template: "https://github.com/train360-corp/supasecure/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-#    url_headers:
-#      - "Accept: application/octet-stream"
-#      - 'Authorization: bearer #{ENV["HOMEBREW_GITHUB_API_TOKEN"]}'
-#    commit_author:
-#      name: goreleaserbot
-#      email: bot@goreleaser.com
-#    commit_msg_template: "feat: brew formula update for {{ .ProjectName }} version {{ .Tag }}"
-#    directory: Formula
-#    caveats: "supasecure --help"
-#    homepage: "https://github.com/train360-corp/supasecure"
-#    description: "CLI for interacting with a Supasecure instance."
-#    license: "MIT"
-#    test: |
-#      system "#{bin}/supasecure --version"
-#    repository:
-#      owner: train360-corp
-#      name: homebrew-taps
-#      branch: main
-#      token: "{{ .Env.HOMEBREW_TAP_REPO_SECRET }}"
+brews:
+  - name: projconf
+    download_strategy: CurlDownloadStrategy
+    url_template: "https://github.com/train360-corp/projconf/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    url_headers:
+      - "Accept: application/octet-stream"
+      - 'Authorization: bearer #{ENV["HOMEBREW_GITHUB_API_TOKEN"]}'
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    commit_msg_template: "feat: brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    directory: Formula
+    caveats: "projconf --help"
+    homepage: "https://github.com/train360-corp/projconf"
+    description: "ProjConf CLI."
+    license: "MIT"
+    test: |
+      system "#{bin}/projconf --version"
+    repository:
+      owner: train360-corp
+      name: homebrew-taps
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_REPO_SECRET }}"
