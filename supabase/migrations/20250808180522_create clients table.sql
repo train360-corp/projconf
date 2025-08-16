@@ -10,10 +10,6 @@ CREATE UNIQUE INDEX clients_pkey ON public.clients USING btree (id);
 
 alter table "public"."clients" add constraint "clients_pkey" PRIMARY KEY using index "clients_pkey";
 
-alter table "public"."clients" add constraint "clients_id_fkey" FOREIGN KEY (id) REFERENCES auth.identities(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
-
-alter table "public"."clients" validate constraint "clients_id_fkey";
-
 grant delete on table "public"."clients" to "anon";
 
 grant insert on table "public"."clients" to "anon";

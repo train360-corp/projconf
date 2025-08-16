@@ -10,6 +10,8 @@ import (
 	"github.com/train360-corp/projconf/internal/docker/types"
 	"github.com/train360-corp/projconf/internal/fs"
 	"github.com/train360-corp/projconf/internal/server"
+	"github.com/train360-corp/projconf/internal/supabase/migrations"
+	"github.com/train360-corp/projconf/internal/utils/postgres"
 	"github.com/urfave/cli/v2"
 	"io"
 	"log"
@@ -17,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 )
@@ -28,6 +31,7 @@ func ServerCommand() *cli.Command {
 		Subcommands: []*cli.Command{
 			serveCommand(),
 			updateCommand(),
+			resetCommand(),
 		},
 	}
 }
@@ -37,6 +41,49 @@ const (
 	projectLabelValue = "projconf"
 	networkName       = "projconf-net"
 )
+
+func resetCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "reset",
+		Usage: "destructively removes a ProjConf server and resets the config",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:     "confirm",
+				Aliases:  []string{"y"},
+				Required: true,
+			},
+		},
+		Action: func(c *cli.Context) error {
+
+			root, err := fs.GetUserRoot()
+			if err != nil {
+				return err
+			}
+
+			cfg, err := config.Load()
+			if err != nil {
+				return err
+			}
+
+			// remove local db folder
+			if err := os.RemoveAll(filepath.Join(root, "db")); err != nil {
+				return errors.New(fmt.Sprintf("failed to remove database: %s", err))
+			} else {
+				log.Printf("removed database directory")
+			}
+
+			// reset db config
+			cfg.Supabase = config.GenDefaultConfig().Supabase
+			if err := cfg.Flush(); err != nil {
+				return errors.New(fmt.Sprintf("failed to reset database config: %s", err))
+			} else {
+				log.Printf("reset database config")
+			}
+
+			return nil
+		},
+	}
+}
 
 func updateCommand() *cli.Command {
 	return &cli.Command{
@@ -90,7 +137,46 @@ func updateCommand() *cli.Command {
 			default:
 			}
 
-			// TODO: apply migrations here (ctx-aware)
+			if err := postgres.ExecuteOnEmbeddedDatabase(c.Context, migrations.MigrationsSchemaStatements); err != nil {
+				return errors.New(fmt.Sprintf("failed to apply migrations schema migrations: %s", err))
+			} else {
+				log.Printf("migrations schema migrated successfully")
+			}
+
+			existingMigrations, err := migrations.LoadSchemaMigrations(c.Context)
+			if err != nil {
+				return errors.New(fmt.Sprintf("failed to load existing schema migrations: %s", err.Error()))
+			}
+
+			m, _ := migrations.Get()
+			commands := make([]string, 0)
+			applied := 0
+			passed := 0
+			for _, migration := range m {
+
+				parts := strings.Split(migration.Name, "_")
+				version := parts[0]
+				name := strings.TrimSuffix(parts[1], ".sql")
+
+				alreadyApplied := false
+				for _, existingMigration := range existingMigrations {
+					if existingMigration.Version == version {
+						alreadyApplied = true
+						passed++
+					}
+				}
+
+				if !alreadyApplied {
+					applied++
+					commands = append(commands, string(migration.Data))
+					commands = append(commands, fmt.Sprintf("INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('%s', '%s')", version, name))
+				}
+			}
+			if err := postgres.ExecuteOnEmbeddedDatabase(c.Context, commands); err != nil {
+				return errors.New(fmt.Sprintf("failed to apply migrations: %s", err))
+			} else {
+				log.Printf("%v migrations applied successfully (%v already applied)", applied, passed)
+			}
 
 			return nil
 		},

@@ -45,8 +45,6 @@ func (s Service) GetArgs(evn *types.SharedEnv) []string {
 		ContainerPath: "/home/kong/kong.yml:ro,z",
 	}
 
-	defer os.Remove(cfg.LocalPath)
-
 	if err := fs.WriteDependencies(cfg.LocalPath, cfg.Data, cfg.Perm); err != nil {
 		panic(errors.New(fmt.Sprintf("could not write kong config: %v", err)))
 	}

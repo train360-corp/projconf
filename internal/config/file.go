@@ -43,7 +43,7 @@ type DiskConfig struct {
 	Supabase DiskConfigSupabase `yaml:"supabase"`
 }
 
-func genDefaultConfig() *DiskConfig {
+func GenDefaultConfig() *DiskConfig {
 
 	jwtSecret := utils.RandomString(32)
 	iat := time.Now().Unix()
@@ -98,7 +98,7 @@ func Load() (*DiskConfig, error) {
 
 	path := getConfigPath()
 	if !fs.FileExists(path) {
-		err := genDefaultConfig().Flush()
+		err := GenDefaultConfig().Flush()
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("a config file does not exist and an error occurred while writing the default config: %s", err))
 		}
