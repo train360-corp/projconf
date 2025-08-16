@@ -9,7 +9,6 @@ before:
     - go get github.com/oapi-codegen/runtime@v1.1.2
     - go generate ./internal/server/api/doc.go
     - go generate ./internal/supabase/migrations
-    - tar -C ./supabase/migrations -czf ./migrations.tar.gz .
 
 changelog:
   use: github
@@ -94,8 +93,6 @@ release:
   github:
     owner: train360-corp
     name: projconf
-  extra_files:
-    - glob: migrations.tar.gz
   footer: >-
 
     ---
