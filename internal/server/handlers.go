@@ -5,12 +5,38 @@ import (
 	openapitypes "github.com/oapi-codegen/runtime/types"
 	"github.com/train360-corp/projconf/internal/config"
 	"github.com/train360-corp/projconf/internal/supabase"
+	"github.com/train360-corp/projconf/internal/supabase/database"
+	"github.com/train360-corp/projconf/internal/utils/postgres"
 	"net/http"
 	"time"
 )
 
 // RouteHandlers implements api.ServerInterface (generated).
 type RouteHandlers struct{}
+
+func (s *RouteHandlers) PostV1AdminProjects(c *gin.Context) {
+
+	var req struct {
+		Name string `json:"name"`
+	}
+	c.BindJSON(&req)
+
+	var id string
+	err := postgres.Insert(c, "public.projects", database.PublicProjectsInsert{
+		Display: &req.Name,
+	}, "id", &id)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+	} else {
+		c.JSON(http.StatusOK, struct {
+			Id string `json:"id"`
+		}{
+			Id: id,
+		})
+	}
+}
 
 func (s *RouteHandlers) GetV1AdminHealth(c *gin.Context) {
 	c.JSON(http.StatusOK, struct {
