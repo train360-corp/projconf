@@ -5,11 +5,11 @@
  * commercial license.
  */
 
-package app
+package cli
 
 import (
 	"fmt"
-	"github.com/train360-corp/projconf/internal/app/commands"
+	"github.com/train360-corp/projconf/internal/cli/commands"
 	"github.com/train360-corp/projconf/internal/config"
 	"github.com/train360-corp/projconf/internal/fs"
 	"github.com/urfave/cli/v2"
@@ -34,6 +34,7 @@ func Get() *cli.App {
 		Commands: []*cli.Command{
 			commands.ServerCommand(),
 			commands.AuthCommand(),
+			commands.ProjectsCommand(),
 		},
 	}
 }

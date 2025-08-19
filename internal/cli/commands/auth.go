@@ -26,7 +26,7 @@ func AuthCommand() *cli.Command {
 		Name:  "auth",
 		Usage: "authenticate to a ProjConf server",
 		Subcommands: []*cli.Command{
-			&cli.Command{
+			{
 				Name:  "set",
 				Usage: "update the default account settings used by the cli",
 				Flags: []cli.Flag{

@@ -7,7 +7,7 @@ before:
     - go mod tidy
     - go get github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
     - go get github.com/oapi-codegen/runtime@v1.1.2
-    - go generate ./internal/server/api/doc.go
+    - go generate ./internal/server/api/api.go
     - go generate ./internal/supabase/migrations
 
 changelog:

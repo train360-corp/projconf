@@ -86,6 +86,35 @@ func (c *Client) request(config *requestConfig) (*http.Response, error) {
 	return res, nil
 }
 
+func (c *Client) GetProjects() (*[]database.PublicProjectsSelect, error) {
+
+	res, err := c.request(&requestConfig{
+		endpoint: "/rest/v1/projects",
+		single:   false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		log.Println(string(body))
+		return nil, errors.New("unable to find projects")
+	}
+
+	var projects []database.PublicProjectsSelect
+	if err := json.Unmarshal(body, &projects); err != nil {
+		return nil, err
+	}
+
+	return &projects, nil
+}
+
 func (c *Client) GetSelf() (*database.PublicClientsSelect, error) {
 
 	if c.self == nil {

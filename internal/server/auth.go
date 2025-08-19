@@ -11,6 +11,7 @@ import (
 	"crypto/subtle"
 	"github.com/gin-gonic/gin"
 	"github.com/train360-corp/projconf/internal/config"
+	"github.com/train360-corp/projconf/internal/server/api"
 	"github.com/train360-corp/projconf/internal/supabase"
 	"net/http"
 	"strings"
@@ -29,7 +30,10 @@ func auth() gin.HandlerFunc {
 		if strings.HasPrefix(path, "/v1/admin") {
 			raw := strings.TrimSpace(c.GetHeader("Authorization"))
 			if raw == "" {
-				writeAuthError(c, http.StatusUnauthorized, "auth_missing_header", "missing 'Authorization' header")
+				c.AbortWithStatusJSON(http.StatusUnauthorized, api.Unauthorized{
+					Error:       "Unauthorized",
+					Description: "missing 'Authorization' header",
+				})
 				return
 			}
 
@@ -42,7 +46,10 @@ func auth() gin.HandlerFunc {
 			// constant-time compare (same length)
 			if len(token) != len(config.GetGlobal().AdminAccessKey) ||
 				subtle.ConstantTimeCompare([]byte(token), []byte(config.GetGlobal().AdminAccessKey)) != 1 {
-				writeAuthError(c, http.StatusUnauthorized, "auth_invalid_header", "invalid 'Authorization' header")
+				c.AbortWithStatusJSON(http.StatusUnauthorized, api.Unauthorized{
+					Error:       "Unauthorized",
+					Description: "invalid 'Authorization' header",
+				})
 				return
 			}
 			c.Next()
@@ -53,11 +60,17 @@ func auth() gin.HandlerFunc {
 		id := c.GetHeader("x-client-secret-id")
 		sec := c.GetHeader("x-client-secret")
 		if id == "" {
-			writeAuthError(c, http.StatusUnauthorized, "auth_missing_header", "missing 'x-client-secret-id' header")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, api.Unauthorized{
+				Error:       "Unauthorized",
+				Description: "missing 'x-client-secret-id' header",
+			})
 			return
 		}
 		if sec == "" {
-			writeAuthError(c, http.StatusUnauthorized, "auth_missing_header", "missing 'x-client-secret' header")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, api.Unauthorized{
+				Error:       "Unauthorized",
+				Description: "missing 'x-client-secret' header",
+			})
 			return
 		}
 
@@ -70,21 +83,13 @@ func auth() gin.HandlerFunc {
 		})
 
 		if _, err := sb.GetSelf(); err != nil {
-			// Don’t leak details—uniform failure
-			writeAuthError(c, http.StatusUnauthorized, "auth_client_invalid", "client credentials rejected")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, api.Unauthorized{
+				Error:       "Unauthorized",
+				Description: "client credentials rejected",
+			})
 			return
 		}
 
 		c.Next()
 	}
-}
-
-// --- helpers ---
-
-func writeAuthError(c *gin.Context, status int, code, message string) {
-	c.AbortWithStatusJSON(status, gin.H{
-		"error":   http.StatusText(status),
-		"code":    code,
-		"message": message,
-	})
 }

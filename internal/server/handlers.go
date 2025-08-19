@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	openapitypes "github.com/oapi-codegen/runtime/types"
 	"github.com/train360-corp/projconf/internal/config"
+	"github.com/train360-corp/projconf/internal/server/api"
 	"github.com/train360-corp/projconf/internal/supabase"
 	"github.com/train360-corp/projconf/internal/supabase/database"
 	"github.com/train360-corp/projconf/internal/utils/postgres"
@@ -20,6 +21,18 @@ import (
 
 // RouteHandlers implements api.ServerInterface (generated).
 type RouteHandlers struct{}
+
+func (s *RouteHandlers) GetV1Projects(c *gin.Context) {
+	sb := supabase.GetFromContext(c)
+	if projects, err := sb.GetProjects(); err != nil {
+		c.AbortWithStatusJSON(http.StatusForbidden, api.Error{
+			Error:       "unable to get projects",
+			Description: err.Error(),
+		})
+	} else {
+		c.JSON(http.StatusOK, projects)
+	}
+}
 
 func (s *RouteHandlers) PostV1AdminProjectsProjectIdEnvironments(c *gin.Context, projectId openapitypes.UUID) {
 
@@ -34,8 +47,9 @@ func (s *RouteHandlers) PostV1AdminProjectsProjectIdEnvironments(c *gin.Context,
 		ProjectId: projectId.String(),
 	}, "id", &id)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+		c.AbortWithStatusJSON(http.StatusBadRequest, api.Error{
+			Error:       "unable to create environment",
+			Description: err.Error(),
 		})
 	} else {
 		c.JSON(http.StatusOK, struct {
@@ -59,8 +73,9 @@ func (s *RouteHandlers) PostV1AdminProjects(c *gin.Context) {
 		Display: &req.Name,
 	}, "id", &id)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+		c.AbortWithStatusJSON(http.StatusBadRequest, api.Error{
+			Error:       "unable to create project",
+			Description: err.Error(),
 		})
 	} else {
 		c.JSON(http.StatusOK, struct {
@@ -87,9 +102,9 @@ func (s *RouteHandlers) GetV1ClientsSelf(c *gin.Context) {
 
 	sb := supabase.GetFromContext(c)
 	if client, clientErr := sb.GetSelf(); clientErr != nil {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-			"error":   "authentication failed",
-			"details": clientErr.Error(),
+		c.AbortWithStatusJSON(http.StatusForbidden, api.Error{
+			Description: clientErr.Error(),
+			Error:       "unable to get client",
 		})
 	} else {
 		c.JSON(http.StatusOK, client)
@@ -110,18 +125,19 @@ func (s *RouteHandlers) GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecrets(
 
 	secrets, err := sb.GetSecrets(projectId.String(), environmentId.String())
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   "secrets retrieval failed",
-			"details": err.Error(),
+		c.AbortWithStatusJSON(http.StatusBadRequest, api.Error{
+			Description: err.Error(),
+			Error:       "unable to get secrets",
 		})
 		return
 	}
 
 	if len(secrets) == 0 {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   "secrets retrieval failed",
-			"details": "no secrets found",
+		c.AbortWithStatusJSON(http.StatusBadRequest, api.Error{
+			Description: "the array of secrets returned was empty",
+			Error:       "empty secrets",
 		})
+		return
 	}
 
 	resp := make([]SecretKV, 0, len(secrets))

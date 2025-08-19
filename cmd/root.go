@@ -8,10 +8,10 @@
 package cmd
 
 import (
-	"github.com/train360-corp/projconf/internal/app"
+	"github.com/train360-corp/projconf/internal/cli"
 	"os"
 )
 
 func Run() error {
-	return app.Get().Run(os.Args)
+	return cli.Get().Run(os.Args)
 }
