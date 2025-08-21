@@ -35,6 +35,7 @@ func Get() *cli.App {
 			commands.ServerCommand(),
 			commands.AuthCommand(),
 			commands.ProjectsCommand(),
+			commands.EnvironmentsCommand(),
 		},
 	}
 }

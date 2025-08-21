@@ -24,6 +24,7 @@ changelog:
 
 builds:
   - id: projconf
+    binary: projconf
     env:
       - CGO_ENABLED=0
     goos:

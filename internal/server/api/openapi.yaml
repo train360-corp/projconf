@@ -31,84 +31,6 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
-  /v1/admin/projects:
-    post:
-      tags:
-        - admin
-      summary: Create project
-      description: Create a new project
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: project name (must be unique)
-                  pattern: ^[[:alnum:] _]+$
-                  minLength: 1
-              required:
-                - name
-      responses:
-        '201':
-          description: Project Created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '500': { $ref: '#/components/responses/InternalServerError' }
-
-  /v1/admin/projects/{project_id}/environments:
-    post:
-      tags:
-        - admin
-      summary: Create environment
-      description: Create a new environment
-      parameters:
-        - name: project_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: The UUID of the project.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: project name (must be unique)
-                  pattern: ^[[:alnum:] _]+$
-                  minLength: 1
-              required:
-                - name
-      responses:
-        '201':
-          description: Environment Created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '500': { $ref: '#/components/responses/InternalServerError' }
-
   /v1/clients/_self:
     get:
       tags:
@@ -142,6 +64,7 @@ paths:
     get:
       tags:
         - client
+        - admin
       summary: List projects
       description: Returns all projects accessible by the client
       responses:
@@ -165,11 +88,107 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
+    post:
+      tags:
+        - admin
+      summary: Create project
+      description: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: project name (must be unique)
+                  pattern: ^[[:alnum:] _]+$
+                  minLength: 1
+              required:
+                - name
+      responses:
+        '201':
+          description: Project Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ID'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /v1/projects/{project_id}/environments:
+    get:
+      tags:
+        - client
+        - admin
+      summary: List environments
+      description: Returns all environments for a given project.
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The UUID of the project.
+      responses:
+        '200':
+          description: A list of environments.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Environments"
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    post:
+      tags:
+        - admin
+      summary: Create environment
+      description: Create a new environment
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The UUID of the project.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: project name (must be unique)
+                  pattern: ^[[:alnum:] _]+$
+                  minLength: 1
+              required:
+                - name
+      responses:
+        '201':
+          description: Environment Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ID'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
 
   /v1/projects/{project_id}/environments/{environment_id}/secrets:
     get:
       tags:
         - client
+        - admin
       summary: List secrets
       description: Returns all secrets for a given project environment.
       parameters:
@@ -224,12 +243,24 @@ components:
           schema: { $ref: "#/components/schemas/Error" }
 
   schemas:
+    Environments:
+      type: array
+      items:
+        $ref: "#/components/schemas/Environment"
+    Environment:
+      type: object
+      properties:
+        id:
+          type: string
+        display:
+          type: string
+      required:
+        - id
+        - display
     Secrets:
       type: array
       items:
         $ref: "#/components/schemas/Secret"
-      required:
-        - secrets
     Secret:
       type: object
       properties:

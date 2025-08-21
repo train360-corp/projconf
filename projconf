@@ -15,16 +15,11 @@ for arg in "$@"; do
   esac
 done
 
-if [[ $NO_BUILD -eq 1 ]]; then
-  echo "==> Skipping build (flag --no-build passed)"
-else
-  echo "==> Building projconf..."
+if [[ $NO_BUILD -eq 0 ]]; then
   rm -rf ./dist
   rm -rf ./internal/supabase/migrations/embedded/*.sql
   goreleaser release --clean --skip=validate --snapshot
 fi
 
-export PROJCONF_ADMIN_ACCESS_KEY="LOCAL-DEVELOPMENT-TEST"
-
-echo "==> Running projconf..."
+#echo "==> Running projconf..."
 exec ./dist/projconf_darwin_arm64_v8.0/projconf "${ARGS[@]}"

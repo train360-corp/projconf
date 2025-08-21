@@ -94,8 +94,9 @@ func resetCommand() *cli.Command {
 
 func updateCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "update",
-		Usage: "update a ProjConf server",
+		Name:    "update",
+		Usage:   "update a ProjConf server",
+		Aliases: []string{"migrate"},
 		Action: func(c *cli.Context) error {
 
 			tmp, err := fs.GetTempRoot()
@@ -192,7 +193,7 @@ func updateCommand() *cli.Command {
 
 func serveCommand() *cli.Command {
 	srvCfg := server.Config{}
-	sharedCfg, flags := config.GetSharedFlags()
+	sharedCfg, flags := config.GetServerFlags()
 	return &cli.Command{
 		Name:    "serve",
 		Aliases: []string{"start"},
@@ -342,7 +343,7 @@ func removeNetworkIfExists(ctx context.Context, name string) error {
 
 func ensureNetwork(ctx context.Context, name string) error {
 	// If exists, done.
-	out, err := exec.CommandContext(ctx, "docker", "network", "ls", "-q", "--filter", "name=^"+name+"$").Output()
+	out, err := exec.CommandContext(ctx, "docker", "network", "listProjectsSubcommand", "-q", "--filter", "name=^"+name+"$").Output()
 	if err == nil && strings.TrimSpace(string(out)) != "" {
 		return nil
 	}

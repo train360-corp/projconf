@@ -16,16 +16,27 @@ type Flags struct {
 	AdminAPIKey string
 }
 
-func GetSharedFlags() (*Flags, []cli.Flag) {
+func getAdminAPIKeyFlag(def string, f *Flags) cli.Flag {
+	return &cli.StringFlag{
+		Name:        "admin-api-key",
+		Aliases:     []string{"A"},
+		Usage:       "authenticate with an admin api key",
+		EnvVars:     []string{"PROJCONF_ADMIN_ACCESS_KEY"},
+		Value:       def,
+		Destination: &f.AdminAPIKey,
+	}
+}
+
+func GetServerFlags() (*Flags, []cli.Flag) {
 	f := &Flags{}
 	return f, []cli.Flag{
-		&cli.StringFlag{
-			Name:        "admin-api-key",
-			Aliases:     []string{"A"},
-			Usage:       "authenticate with an admin api key",
-			EnvVars:     []string{"PROJCONF_ADMIN_ACCESS_KEY"},
-			Value:       utils.RandomString(24),
-			Destination: &f.AdminAPIKey,
-		},
+		getAdminAPIKeyFlag(utils.RandomString(24), f),
+	}
+}
+
+func GetClientFlags() (*Flags, []cli.Flag) {
+	f := &Flags{}
+	return f, []cli.Flag{
+		getAdminAPIKeyFlag("", f),
 	}
 }

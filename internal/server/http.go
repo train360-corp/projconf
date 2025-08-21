@@ -42,7 +42,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	router.Use(ginvalidator.OapiRequestValidator(swagger))
 
 	// use route handlers
-	api.RegisterHandlers(router, &RouteHandlers{})
+	api.RegisterHandlers(router, GetServerInterface())
 
 	return &HTTPServer{
 		cfg:    cfg,

@@ -1,13 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"github.com/train360-corp/projconf/cmd"
-	"log"
+	"os"
 )
 
 func main() {
 	err := cmd.Run()
 	if err != nil {
-		log.Fatal(err)
+		if _, err := fmt.Fprintf(os.Stderr, "\n%v\n", err); err != nil {
+			panic(err)
+		}
+		os.Exit(1)
 	}
 }

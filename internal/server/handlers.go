@@ -9,18 +9,44 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	openapitypes "github.com/oapi-codegen/runtime/types"
 	"github.com/train360-corp/projconf/internal/config"
 	"github.com/train360-corp/projconf/internal/server/api"
 	"github.com/train360-corp/projconf/internal/supabase"
 	"github.com/train360-corp/projconf/internal/supabase/database"
-	"github.com/train360-corp/projconf/internal/utils/postgres"
 	"net/http"
+	"strings"
 	"time"
 )
 
+func GetServerInterface() api.ServerInterface {
+	return &RouteHandlers{}
+}
+
 // RouteHandlers implements api.ServerInterface (generated).
 type RouteHandlers struct{}
+
+func (s *RouteHandlers) GetV1ProjectsProjectIdEnvironments(c *gin.Context, projectId openapitypes.UUID) {
+	sb := supabase.GetFromContext(c)
+
+	id, _ := uuid.Parse(projectId.String())
+	if environments, err := sb.GetEnvironments(&id); err != nil {
+		c.AbortWithStatusJSON(http.StatusForbidden, api.Error{
+			Error:       "unable to get environments",
+			Description: err.Error(),
+		})
+	} else {
+		envs := make(api.Environments, len(*environments))
+		for i, e := range *environments {
+			envs[i] = api.Environment{
+				Id:      e.Id,
+				Display: e.Display,
+			}
+		}
+		c.JSON(http.StatusOK, envs)
+	}
+}
 
 func (s *RouteHandlers) GetV1Projects(c *gin.Context) {
 	sb := supabase.GetFromContext(c)
@@ -34,53 +60,61 @@ func (s *RouteHandlers) GetV1Projects(c *gin.Context) {
 	}
 }
 
-func (s *RouteHandlers) PostV1AdminProjectsProjectIdEnvironments(c *gin.Context, projectId openapitypes.UUID) {
+func (s *RouteHandlers) PostV1ProjectsProjectIdEnvironments(c *gin.Context, projectId openapitypes.UUID) {
 
 	var req struct {
 		Name string `json:"name"`
 	}
 	c.BindJSON(&req)
 
-	var id string
-	err := postgres.Insert(c, "public.environments", database.PublicEnvironmentsInsert{
+	sb := supabase.GetFromContext(c)
+	id := uuid.New().String()
+	createdAt := time.Now().Format(time.RFC3339)
+	if environment, err := sb.PostEnvironment(database.PublicEnvironmentsInsert{
 		Display:   &req.Name,
 		ProjectId: projectId.String(),
-	}, "id", &id)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, api.Error{
-			Error:       "unable to create environment",
-			Description: err.Error(),
-		})
+		Id:        &id,
+		CreatedAt: &createdAt,
+	}); err != nil {
+		if strings.Index(err.Error(), "new row violates row-level security policy for table") != -1 {
+			c.AbortWithStatusJSON(http.StatusForbidden, api.Error{
+				Error:       "unable to create environment",
+				Description: "permission denied",
+			})
+		} else {
+			c.AbortWithStatusJSON(http.StatusBadRequest, api.Error{
+				Error:       "unable to create environment",
+				Description: err.Error(),
+			})
+		}
 	} else {
-		c.JSON(http.StatusOK, struct {
-			Id string `json:"id"`
-		}{
+		id, _ := uuid.Parse(environment.Id)
+		c.JSON(http.StatusOK, api.ID{
 			Id: id,
 		})
 	}
-
 }
 
-func (s *RouteHandlers) PostV1AdminProjects(c *gin.Context) {
+func (s *RouteHandlers) PostV1Projects(c *gin.Context) {
 
 	var req struct {
 		Name string `json:"name"`
 	}
 	c.BindJSON(&req)
 
-	var id string
-	err := postgres.Insert(c, "public.projects", database.PublicProjectsInsert{
+	sb := supabase.GetFromContext(c)
+	id := uuid.New().String()
+	if project, err := sb.PostProject(database.PublicProjectsInsert{
 		Display: &req.Name,
-	}, "id", &id)
-	if err != nil {
+		Id:      &id,
+	}); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, api.Error{
 			Error:       "unable to create project",
 			Description: err.Error(),
 		})
 	} else {
-		c.JSON(http.StatusOK, struct {
-			Id string `json:"id"`
-		}{
+		id, _ := uuid.Parse(project.Id)
+		c.JSON(http.StatusOK, api.ID{
 			Id: id,
 		})
 	}

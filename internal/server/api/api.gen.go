@@ -18,6 +18,15 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Environment defines model for Environment.
+type Environment struct {
+	Display string `json:"display"`
+	Id      string `json:"id"`
+}
+
+// Environments defines model for Environments.
+type Environments = []Environment
+
 // Error defines model for Error.
 type Error struct {
 	Description string `json:"description"`
@@ -50,23 +59,23 @@ type InternalServerError = Error
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
-// PostV1AdminProjectsJSONBody defines parameters for PostV1AdminProjects.
-type PostV1AdminProjectsJSONBody struct {
+// PostV1ProjectsJSONBody defines parameters for PostV1Projects.
+type PostV1ProjectsJSONBody struct {
 	// Name project name (must be unique)
 	Name string `json:"name"`
 }
 
-// PostV1AdminProjectsProjectIdEnvironmentsJSONBody defines parameters for PostV1AdminProjectsProjectIdEnvironments.
-type PostV1AdminProjectsProjectIdEnvironmentsJSONBody struct {
+// PostV1ProjectsProjectIdEnvironmentsJSONBody defines parameters for PostV1ProjectsProjectIdEnvironments.
+type PostV1ProjectsProjectIdEnvironmentsJSONBody struct {
 	// Name project name (must be unique)
 	Name string `json:"name"`
 }
 
-// PostV1AdminProjectsJSONRequestBody defines body for PostV1AdminProjects for application/json ContentType.
-type PostV1AdminProjectsJSONRequestBody PostV1AdminProjectsJSONBody
+// PostV1ProjectsJSONRequestBody defines body for PostV1Projects for application/json ContentType.
+type PostV1ProjectsJSONRequestBody PostV1ProjectsJSONBody
 
-// PostV1AdminProjectsProjectIdEnvironmentsJSONRequestBody defines body for PostV1AdminProjectsProjectIdEnvironments for application/json ContentType.
-type PostV1AdminProjectsProjectIdEnvironmentsJSONRequestBody PostV1AdminProjectsProjectIdEnvironmentsJSONBody
+// PostV1ProjectsProjectIdEnvironmentsJSONRequestBody defines body for PostV1ProjectsProjectIdEnvironments for application/json ContentType.
+type PostV1ProjectsProjectIdEnvironmentsJSONRequestBody PostV1ProjectsProjectIdEnvironmentsJSONBody
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -144,21 +153,24 @@ type ClientInterface interface {
 	// GetV1AdminHealth request
 	GetV1AdminHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PostV1AdminProjectsWithBody request with any body
-	PostV1AdminProjectsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	PostV1AdminProjects(ctx context.Context, body PostV1AdminProjectsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PostV1AdminProjectsProjectIdEnvironmentsWithBody request with any body
-	PostV1AdminProjectsProjectIdEnvironmentsWithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	PostV1AdminProjectsProjectIdEnvironments(ctx context.Context, projectId openapi_types.UUID, body PostV1AdminProjectsProjectIdEnvironmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// GetV1ClientsSelf request
 	GetV1ClientsSelf(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetV1Projects request
 	GetV1Projects(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostV1ProjectsWithBody request with any body
+	PostV1ProjectsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostV1Projects(ctx context.Context, body PostV1ProjectsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetV1ProjectsProjectIdEnvironments request
+	GetV1ProjectsProjectIdEnvironments(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostV1ProjectsProjectIdEnvironmentsWithBody request with any body
+	PostV1ProjectsProjectIdEnvironmentsWithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostV1ProjectsProjectIdEnvironments(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdEnvironmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecrets request
 	GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecrets(ctx context.Context, projectId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -166,54 +178,6 @@ type ClientInterface interface {
 
 func (c *Client) GetV1AdminHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetV1AdminHealthRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PostV1AdminProjectsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostV1AdminProjectsRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PostV1AdminProjects(ctx context.Context, body PostV1AdminProjectsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostV1AdminProjectsRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PostV1AdminProjectsProjectIdEnvironmentsWithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostV1AdminProjectsProjectIdEnvironmentsRequestWithBody(c.Server, projectId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PostV1AdminProjectsProjectIdEnvironments(ctx context.Context, projectId openapi_types.UUID, body PostV1AdminProjectsProjectIdEnvironmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostV1AdminProjectsProjectIdEnvironmentsRequest(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -238,6 +202,66 @@ func (c *Client) GetV1ClientsSelf(ctx context.Context, reqEditors ...RequestEdit
 
 func (c *Client) GetV1Projects(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetV1ProjectsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostV1ProjectsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostV1ProjectsRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostV1Projects(ctx context.Context, body PostV1ProjectsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostV1ProjectsRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetV1ProjectsProjectIdEnvironments(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetV1ProjectsProjectIdEnvironmentsRequest(c.Server, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostV1ProjectsProjectIdEnvironmentsWithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostV1ProjectsProjectIdEnvironmentsRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostV1ProjectsProjectIdEnvironments(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdEnvironmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostV1ProjectsProjectIdEnvironmentsRequest(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -283,93 +307,6 @@ func NewGetV1AdminHealthRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	return req, nil
-}
-
-// NewPostV1AdminProjectsRequest calls the generic PostV1AdminProjects builder with application/json body
-func NewPostV1AdminProjectsRequest(server string, body PostV1AdminProjectsJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPostV1AdminProjectsRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewPostV1AdminProjectsRequestWithBody generates requests for PostV1AdminProjects with any type of body
-func NewPostV1AdminProjectsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/admin/projects")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewPostV1AdminProjectsProjectIdEnvironmentsRequest calls the generic PostV1AdminProjectsProjectIdEnvironments builder with application/json body
-func NewPostV1AdminProjectsProjectIdEnvironmentsRequest(server string, projectId openapi_types.UUID, body PostV1AdminProjectsProjectIdEnvironmentsJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPostV1AdminProjectsProjectIdEnvironmentsRequestWithBody(server, projectId, "application/json", bodyReader)
-}
-
-// NewPostV1AdminProjectsProjectIdEnvironmentsRequestWithBody generates requests for PostV1AdminProjectsProjectIdEnvironments with any type of body
-func NewPostV1AdminProjectsProjectIdEnvironmentsRequestWithBody(server string, projectId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "project_id", runtime.ParamLocationPath, projectId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/admin/projects/%s/environments", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -424,6 +361,127 @@ func NewGetV1ProjectsRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewPostV1ProjectsRequest calls the generic PostV1Projects builder with application/json body
+func NewPostV1ProjectsRequest(server string, body PostV1ProjectsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostV1ProjectsRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostV1ProjectsRequestWithBody generates requests for PostV1Projects with any type of body
+func NewPostV1ProjectsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetV1ProjectsProjectIdEnvironmentsRequest generates requests for GetV1ProjectsProjectIdEnvironments
+func NewGetV1ProjectsProjectIdEnvironmentsRequest(server string, projectId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "project_id", runtime.ParamLocationPath, projectId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostV1ProjectsProjectIdEnvironmentsRequest calls the generic PostV1ProjectsProjectIdEnvironments builder with application/json body
+func NewPostV1ProjectsProjectIdEnvironmentsRequest(server string, projectId openapi_types.UUID, body PostV1ProjectsProjectIdEnvironmentsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostV1ProjectsProjectIdEnvironmentsRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewPostV1ProjectsProjectIdEnvironmentsRequestWithBody generates requests for PostV1ProjectsProjectIdEnvironments with any type of body
+func NewPostV1ProjectsProjectIdEnvironmentsRequestWithBody(server string, projectId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "project_id", runtime.ParamLocationPath, projectId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -515,21 +573,24 @@ type ClientWithResponsesInterface interface {
 	// GetV1AdminHealthWithResponse request
 	GetV1AdminHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetV1AdminHealthResponse, error)
 
-	// PostV1AdminProjectsWithBodyWithResponse request with any body
-	PostV1AdminProjectsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1AdminProjectsResponse, error)
-
-	PostV1AdminProjectsWithResponse(ctx context.Context, body PostV1AdminProjectsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1AdminProjectsResponse, error)
-
-	// PostV1AdminProjectsProjectIdEnvironmentsWithBodyWithResponse request with any body
-	PostV1AdminProjectsProjectIdEnvironmentsWithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1AdminProjectsProjectIdEnvironmentsResponse, error)
-
-	PostV1AdminProjectsProjectIdEnvironmentsWithResponse(ctx context.Context, projectId openapi_types.UUID, body PostV1AdminProjectsProjectIdEnvironmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1AdminProjectsProjectIdEnvironmentsResponse, error)
-
 	// GetV1ClientsSelfWithResponse request
 	GetV1ClientsSelfWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetV1ClientsSelfResponse, error)
 
 	// GetV1ProjectsWithResponse request
 	GetV1ProjectsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetV1ProjectsResponse, error)
+
+	// PostV1ProjectsWithBodyWithResponse request with any body
+	PostV1ProjectsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsResponse, error)
+
+	PostV1ProjectsWithResponse(ctx context.Context, body PostV1ProjectsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsResponse, error)
+
+	// GetV1ProjectsProjectIdEnvironmentsWithResponse request
+	GetV1ProjectsProjectIdEnvironmentsWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetV1ProjectsProjectIdEnvironmentsResponse, error)
+
+	// PostV1ProjectsProjectIdEnvironmentsWithBodyWithResponse request with any body
+	PostV1ProjectsProjectIdEnvironmentsWithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdEnvironmentsResponse, error)
+
+	PostV1ProjectsProjectIdEnvironmentsWithResponse(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdEnvironmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdEnvironmentsResponse, error)
 
 	// GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsWithResponse request
 	GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsWithResponse(ctx context.Context, projectId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsResponse, error)
@@ -558,62 +619,6 @@ func (r GetV1AdminHealthResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetV1AdminHealthResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type PostV1AdminProjectsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *struct {
-		Id *string `json:"id,omitempty"`
-	}
-	JSON400 *BadRequest
-	JSON401 *Unauthorized
-	JSON403 *Forbidden
-	JSON500 *InternalServerError
-}
-
-// Status returns HTTPResponse.Status
-func (r PostV1AdminProjectsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PostV1AdminProjectsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type PostV1AdminProjectsProjectIdEnvironmentsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *struct {
-		Id *string `json:"id,omitempty"`
-	}
-	JSON400 *BadRequest
-	JSON401 *Unauthorized
-	JSON403 *Forbidden
-	JSON500 *InternalServerError
-}
-
-// Status returns HTTPResponse.Status
-func (r PostV1AdminProjectsProjectIdEnvironmentsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PostV1AdminProjectsProjectIdEnvironmentsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -680,6 +685,84 @@ func (r GetV1ProjectsResponse) StatusCode() int {
 	return 0
 }
 
+type PostV1ProjectsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *ID
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r PostV1ProjectsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostV1ProjectsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetV1ProjectsProjectIdEnvironmentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Environments
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetV1ProjectsProjectIdEnvironmentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetV1ProjectsProjectIdEnvironmentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostV1ProjectsProjectIdEnvironmentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *ID
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r PostV1ProjectsProjectIdEnvironmentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostV1ProjectsProjectIdEnvironmentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -715,40 +798,6 @@ func (c *ClientWithResponses) GetV1AdminHealthWithResponse(ctx context.Context, 
 	return ParseGetV1AdminHealthResponse(rsp)
 }
 
-// PostV1AdminProjectsWithBodyWithResponse request with arbitrary body returning *PostV1AdminProjectsResponse
-func (c *ClientWithResponses) PostV1AdminProjectsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1AdminProjectsResponse, error) {
-	rsp, err := c.PostV1AdminProjectsWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePostV1AdminProjectsResponse(rsp)
-}
-
-func (c *ClientWithResponses) PostV1AdminProjectsWithResponse(ctx context.Context, body PostV1AdminProjectsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1AdminProjectsResponse, error) {
-	rsp, err := c.PostV1AdminProjects(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePostV1AdminProjectsResponse(rsp)
-}
-
-// PostV1AdminProjectsProjectIdEnvironmentsWithBodyWithResponse request with arbitrary body returning *PostV1AdminProjectsProjectIdEnvironmentsResponse
-func (c *ClientWithResponses) PostV1AdminProjectsProjectIdEnvironmentsWithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1AdminProjectsProjectIdEnvironmentsResponse, error) {
-	rsp, err := c.PostV1AdminProjectsProjectIdEnvironmentsWithBody(ctx, projectId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePostV1AdminProjectsProjectIdEnvironmentsResponse(rsp)
-}
-
-func (c *ClientWithResponses) PostV1AdminProjectsProjectIdEnvironmentsWithResponse(ctx context.Context, projectId openapi_types.UUID, body PostV1AdminProjectsProjectIdEnvironmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1AdminProjectsProjectIdEnvironmentsResponse, error) {
-	rsp, err := c.PostV1AdminProjectsProjectIdEnvironments(ctx, projectId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePostV1AdminProjectsProjectIdEnvironmentsResponse(rsp)
-}
-
 // GetV1ClientsSelfWithResponse request returning *GetV1ClientsSelfResponse
 func (c *ClientWithResponses) GetV1ClientsSelfWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetV1ClientsSelfResponse, error) {
 	rsp, err := c.GetV1ClientsSelf(ctx, reqEditors...)
@@ -765,6 +814,49 @@ func (c *ClientWithResponses) GetV1ProjectsWithResponse(ctx context.Context, req
 		return nil, err
 	}
 	return ParseGetV1ProjectsResponse(rsp)
+}
+
+// PostV1ProjectsWithBodyWithResponse request with arbitrary body returning *PostV1ProjectsResponse
+func (c *ClientWithResponses) PostV1ProjectsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsResponse, error) {
+	rsp, err := c.PostV1ProjectsWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostV1ProjectsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostV1ProjectsWithResponse(ctx context.Context, body PostV1ProjectsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsResponse, error) {
+	rsp, err := c.PostV1Projects(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostV1ProjectsResponse(rsp)
+}
+
+// GetV1ProjectsProjectIdEnvironmentsWithResponse request returning *GetV1ProjectsProjectIdEnvironmentsResponse
+func (c *ClientWithResponses) GetV1ProjectsProjectIdEnvironmentsWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetV1ProjectsProjectIdEnvironmentsResponse, error) {
+	rsp, err := c.GetV1ProjectsProjectIdEnvironments(ctx, projectId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetV1ProjectsProjectIdEnvironmentsResponse(rsp)
+}
+
+// PostV1ProjectsProjectIdEnvironmentsWithBodyWithResponse request with arbitrary body returning *PostV1ProjectsProjectIdEnvironmentsResponse
+func (c *ClientWithResponses) PostV1ProjectsProjectIdEnvironmentsWithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdEnvironmentsResponse, error) {
+	rsp, err := c.PostV1ProjectsProjectIdEnvironmentsWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostV1ProjectsProjectIdEnvironmentsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostV1ProjectsProjectIdEnvironmentsWithResponse(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdEnvironmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdEnvironmentsResponse, error) {
+	rsp, err := c.PostV1ProjectsProjectIdEnvironments(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostV1ProjectsProjectIdEnvironmentsResponse(rsp)
 }
 
 // GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsWithResponse request returning *GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsResponse
@@ -799,118 +891,6 @@ func ParseGetV1AdminHealthResponse(rsp *http.Response) (*GetV1AdminHealthRespons
 			return nil, err
 		}
 		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest InternalServerError
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePostV1AdminProjectsResponse parses an HTTP response from a PostV1AdminProjectsWithResponse call
-func ParsePostV1AdminProjectsResponse(rsp *http.Response) (*PostV1AdminProjectsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PostV1AdminProjectsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest struct {
-			Id *string `json:"id,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest InternalServerError
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePostV1AdminProjectsProjectIdEnvironmentsResponse parses an HTTP response from a PostV1AdminProjectsProjectIdEnvironmentsWithResponse call
-func ParsePostV1AdminProjectsProjectIdEnvironmentsResponse(rsp *http.Response) (*PostV1AdminProjectsProjectIdEnvironmentsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PostV1AdminProjectsProjectIdEnvironmentsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest struct {
-			Id *string `json:"id,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest BadRequest
@@ -1061,6 +1041,168 @@ func ParseGetV1ProjectsResponse(rsp *http.Response) (*GetV1ProjectsResponse, err
 	return response, nil
 }
 
+// ParsePostV1ProjectsResponse parses an HTTP response from a PostV1ProjectsWithResponse call
+func ParsePostV1ProjectsResponse(rsp *http.Response) (*PostV1ProjectsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostV1ProjectsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ID
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetV1ProjectsProjectIdEnvironmentsResponse parses an HTTP response from a GetV1ProjectsProjectIdEnvironmentsWithResponse call
+func ParseGetV1ProjectsProjectIdEnvironmentsResponse(rsp *http.Response) (*GetV1ProjectsProjectIdEnvironmentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetV1ProjectsProjectIdEnvironmentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Environments
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostV1ProjectsProjectIdEnvironmentsResponse parses an HTTP response from a PostV1ProjectsProjectIdEnvironmentsWithResponse call
+func ParsePostV1ProjectsProjectIdEnvironmentsResponse(rsp *http.Response) (*PostV1ProjectsProjectIdEnvironmentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostV1ProjectsProjectIdEnvironmentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ID
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsResponse parses an HTTP response from a GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsWithResponse call
 func ParseGetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsResponse(rsp *http.Response) (*GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1120,18 +1262,21 @@ type ServerInterface interface {
 	// Get health
 	// (GET /v1/admin/health)
 	GetV1AdminHealth(c *gin.Context)
-	// Create project
-	// (POST /v1/admin/projects)
-	PostV1AdminProjects(c *gin.Context)
-	// Create environment
-	// (POST /v1/admin/projects/{project_id}/environments)
-	PostV1AdminProjectsProjectIdEnvironments(c *gin.Context, projectId openapi_types.UUID)
 	// Get self
 	// (GET /v1/clients/_self)
 	GetV1ClientsSelf(c *gin.Context)
 	// List projects
 	// (GET /v1/projects)
 	GetV1Projects(c *gin.Context)
+	// Create project
+	// (POST /v1/projects)
+	PostV1Projects(c *gin.Context)
+	// List environments
+	// (GET /v1/projects/{project_id}/environments)
+	GetV1ProjectsProjectIdEnvironments(c *gin.Context, projectId openapi_types.UUID)
+	// Create environment
+	// (POST /v1/projects/{project_id}/environments)
+	PostV1ProjectsProjectIdEnvironments(c *gin.Context, projectId openapi_types.UUID)
 	// List secrets
 	// (GET /v1/projects/{project_id}/environments/{environment_id}/secrets)
 	GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecrets(c *gin.Context, projectId openapi_types.UUID, environmentId openapi_types.UUID)
@@ -1159,43 +1304,6 @@ func (siw *ServerInterfaceWrapper) GetV1AdminHealth(c *gin.Context) {
 	siw.Handler.GetV1AdminHealth(c)
 }
 
-// PostV1AdminProjects operation middleware
-func (siw *ServerInterfaceWrapper) PostV1AdminProjects(c *gin.Context) {
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.PostV1AdminProjects(c)
-}
-
-// PostV1AdminProjectsProjectIdEnvironments operation middleware
-func (siw *ServerInterfaceWrapper) PostV1AdminProjectsProjectIdEnvironments(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "project_id" -------------
-	var projectId openapi_types.UUID
-
-	err = runtime.BindStyledParameterWithOptions("simple", "project_id", c.Param("project_id"), &projectId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter project_id: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.PostV1AdminProjectsProjectIdEnvironments(c, projectId)
-}
-
 // GetV1ClientsSelf operation middleware
 func (siw *ServerInterfaceWrapper) GetV1ClientsSelf(c *gin.Context) {
 
@@ -1220,6 +1328,67 @@ func (siw *ServerInterfaceWrapper) GetV1Projects(c *gin.Context) {
 	}
 
 	siw.Handler.GetV1Projects(c)
+}
+
+// PostV1Projects operation middleware
+func (siw *ServerInterfaceWrapper) PostV1Projects(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PostV1Projects(c)
+}
+
+// GetV1ProjectsProjectIdEnvironments operation middleware
+func (siw *ServerInterfaceWrapper) GetV1ProjectsProjectIdEnvironments(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", c.Param("project_id"), &projectId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter project_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetV1ProjectsProjectIdEnvironments(c, projectId)
+}
+
+// PostV1ProjectsProjectIdEnvironments operation middleware
+func (siw *ServerInterfaceWrapper) PostV1ProjectsProjectIdEnvironments(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", c.Param("project_id"), &projectId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter project_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PostV1ProjectsProjectIdEnvironments(c, projectId)
 }
 
 // GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecrets operation middleware
@@ -1283,9 +1452,10 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/v1/admin/health", wrapper.GetV1AdminHealth)
-	router.POST(options.BaseURL+"/v1/admin/projects", wrapper.PostV1AdminProjects)
-	router.POST(options.BaseURL+"/v1/admin/projects/:project_id/environments", wrapper.PostV1AdminProjectsProjectIdEnvironments)
 	router.GET(options.BaseURL+"/v1/clients/_self", wrapper.GetV1ClientsSelf)
 	router.GET(options.BaseURL+"/v1/projects", wrapper.GetV1Projects)
+	router.POST(options.BaseURL+"/v1/projects", wrapper.PostV1Projects)
+	router.GET(options.BaseURL+"/v1/projects/:project_id/environments", wrapper.GetV1ProjectsProjectIdEnvironments)
+	router.POST(options.BaseURL+"/v1/projects/:project_id/environments", wrapper.PostV1ProjectsProjectIdEnvironments)
 	router.GET(options.BaseURL+"/v1/projects/:project_id/environments/:environment_id/secrets", wrapper.GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecrets)
 }
