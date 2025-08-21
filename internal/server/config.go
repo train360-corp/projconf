@@ -8,7 +8,8 @@
 package server
 
 type Config struct {
-	Host string
-	Port int
-	Mode string
+	Host        string
+	Port        int
+	Mode        string
+	AdminAPIKey string
 }

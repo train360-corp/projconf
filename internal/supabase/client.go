@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/train360-corp/projconf/internal/config"
+	"github.com/train360-corp/projconf/internal/consts"
 	"github.com/train360-corp/projconf/internal/supabase/database"
 	"io"
 	"log"
@@ -26,14 +27,8 @@ type Client struct {
 	self   *database.PublicClientsSelect
 }
 
-func Get(config *Config) *Client {
-	client := &Client{config: config}
-	return client
-}
-
 func GetWithAuth(config *Config, authConfig *AuthConfig) *Client {
-	client := Get(config)
-	client.SetAuth(authConfig)
+	client := &Client{config: config, auth: authConfig}
 	return client
 }
 
@@ -48,21 +43,18 @@ func GetFromContext(ctx *gin.Context) *Client {
 		Url:     appCfg.Supabase.Url,
 		AnonKey: appCfg.Supabase.Keys.Public,
 	}, &AuthConfig{
-		Id:     ctx.GetHeader("x-client-secret-id"),
-		Secret: ctx.GetHeader("x-client-secret"),
+		Id:          ctx.GetHeader(consts.X_CLIENT_SECRET_ID),
+		Secret:      ctx.GetHeader(consts.X_CLIENT_SECRET),
+		AdminAPIKey: ctx.GetHeader(consts.X_ADMIN_API_KEY),
 	})
 }
 
-func (c *Client) SetAuth(config *AuthConfig) {
-	c.auth = config
-}
-
-type requestConfig struct {
+type request struct {
 	endpoint string
 	single   bool
 }
 
-func (c *Client) request(config *requestConfig) (*http.Response, error) {
+func (c *Client) request(config *request) (*http.Response, error) {
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", strings.TrimSuffix(c.config.Url, "/"), strings.TrimPrefix(config.endpoint, "/")), nil)
@@ -72,8 +64,14 @@ func (c *Client) request(config *requestConfig) (*http.Response, error) {
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.config.AnonKey))
 	req.Header.Add("apikey", c.config.AnonKey)
-	req.Header.Add("x-client-secret-id", c.auth.Id)
-	req.Header.Add("x-client-secret", c.auth.Secret)
+
+	if c.auth.AdminAPIKey != "" {
+		req.Header.Add(consts.X_ADMIN_API_KEY, c.auth.AdminAPIKey)
+	} else {
+		req.Header.Add(consts.X_CLIENT_SECRET_ID, c.auth.Id)
+		req.Header.Add(consts.X_CLIENT_SECRET, c.auth.Secret)
+	}
+
 	if config.single {
 		req.Header.Add("Accept", "application/vnd.pgrst.object+json")
 	}
@@ -88,7 +86,7 @@ func (c *Client) request(config *requestConfig) (*http.Response, error) {
 
 func (c *Client) GetProjects() (*[]database.PublicProjectsSelect, error) {
 
-	res, err := c.request(&requestConfig{
+	res, err := c.request(&request{
 		endpoint: "/rest/v1/projects",
 		single:   false,
 	})
@@ -103,7 +101,7 @@ func (c *Client) GetProjects() (*[]database.PublicProjectsSelect, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		log.Println(string(body))
+		log.Println(fmt.Sprintf("an error occurred while requesting projects: %s", string(body)))
 		return nil, errors.New("unable to find projects")
 	}
 
@@ -118,7 +116,7 @@ func (c *Client) GetProjects() (*[]database.PublicProjectsSelect, error) {
 func (c *Client) GetSelf() (*database.PublicClientsSelect, error) {
 
 	if c.self == nil {
-		res, err := c.request(&requestConfig{
+		res, err := c.request(&request{
 			endpoint: "/rest/v1/clients",
 			single:   true,
 		})
@@ -133,7 +131,7 @@ func (c *Client) GetSelf() (*database.PublicClientsSelect, error) {
 		}
 
 		if res.StatusCode != http.StatusOK {
-			log.Println(string(body))
+			//log.Println(string(body))
 			return nil, errors.New("unable to find client")
 		}
 
@@ -164,7 +162,7 @@ type GetSecretsSecret struct {
 func (c *Client) GetSecrets(projectId string, environmentId string) ([]GetSecretsSecret, error) {
 
 	endpoint := fmt.Sprintf("/rest/v1/secrets?select=value%%2Cvariables(key)&project_id=eq.%s&environment_id=eq.%s", projectId, environmentId)
-	res, err := c.request(&requestConfig{
+	res, err := c.request(&request{
 		endpoint: endpoint,
 		single:   false,
 	})

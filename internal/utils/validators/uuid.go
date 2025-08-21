@@ -5,15 +5,11 @@
  * commercial license.
  */
 
-package supabase
+package validators
 
-type AuthConfig struct {
-	Id          string
-	Secret      string
-	AdminAPIKey string
-}
+import "github.com/google/uuid"
 
-type Config struct {
-	Url     string
-	AnonKey string
+func IsValidUUID(str string) bool {
+	_, err := uuid.Parse(str)
+	return err == nil
 }

@@ -1,10 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "==> Building projconf..."
-goreleaser release --clean --skip=validate --snapshot
+
+ARGS=()
+
+for arg in "$@"; do
+  case "$arg" in
+    --no-build)
+      NO_BUILD=1
+      ;; # skip adding it to ARGS
+    *)
+      ARGS+=("$arg")
+      ;;
+  esac
+done
+
+if [[ $NO_BUILD -eq 1 ]]; then
+  echo "==> Skipping build (flag --no-build passed)"
+else
+  echo "==> Building projconf..."
+  rm -rf ./dist
+  rm -rf ./internal/supabase/migrations/embedded/*.sql
+  goreleaser release --clean --skip=validate --snapshot
+fi
 
 export PROJCONF_ADMIN_ACCESS_KEY="LOCAL-DEVELOPMENT-TEST"
 
 echo "==> Running projconf..."
-exec ./dist/projconf_darwin_arm64_v8.0/projconf "$@"
+exec ./dist/projconf_darwin_arm64_v8.0/projconf "${ARGS[@]}"

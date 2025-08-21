@@ -11,28 +11,25 @@ import (
 	"crypto/subtle"
 	"github.com/gin-gonic/gin"
 	"github.com/train360-corp/projconf/internal/config"
+	"github.com/train360-corp/projconf/internal/consts"
 	"github.com/train360-corp/projconf/internal/server/api"
 	"github.com/train360-corp/projconf/internal/supabase"
 	"net/http"
 	"strings"
 )
 
-// Auth enforces admin/client auth and writes JSON errors directly.
-// Admin:   Authorization (exact or "Bearer <key>") for paths prefixed with /v1/admin
-// Client:  x-client-secret-id + x-client-secret on everything else
-func auth() gin.HandlerFunc {
+func auth(cfg *Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		appCfg, _ := config.Load()
-		path := c.Request.URL.Path
 
 		// ----- ADMIN FLOW -----
-		if strings.HasPrefix(path, "/v1/admin") {
-			raw := strings.TrimSpace(c.GetHeader("Authorization"))
+		if c.GetHeader(consts.X_ADMIN_API_KEY) != "" {
+			raw := strings.TrimSpace(c.GetHeader(consts.X_ADMIN_API_KEY))
 			if raw == "" {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, api.Unauthorized{
 					Error:       "Unauthorized",
-					Description: "missing 'Authorization' header",
+					Description: "missing 'x-admin-api-key' header",
 				})
 				return
 			}
@@ -44,11 +41,12 @@ func auth() gin.HandlerFunc {
 			}
 
 			// constant-time compare (same length)
-			if len(token) != len(config.GetGlobal().AdminAccessKey) ||
-				subtle.ConstantTimeCompare([]byte(token), []byte(config.GetGlobal().AdminAccessKey)) != 1 {
+
+			if len(token) != len(cfg.AdminAPIKey) ||
+				subtle.ConstantTimeCompare([]byte(token), []byte(cfg.AdminAPIKey)) != 1 {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, api.Unauthorized{
 					Error:       "Unauthorized",
-					Description: "invalid 'Authorization' header",
+					Description: "invalid 'x-admin-api-key' header",
 				})
 				return
 			}
@@ -57,8 +55,8 @@ func auth() gin.HandlerFunc {
 		}
 
 		// ----- CLIENT FLOW -----
-		id := c.GetHeader("x-client-secret-id")
-		sec := c.GetHeader("x-client-secret")
+		id := c.GetHeader(consts.X_CLIENT_SECRET_ID)
+		sec := c.GetHeader(consts.X_CLIENT_SECRET)
 		if id == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, api.Unauthorized{
 				Error:       "Unauthorized",

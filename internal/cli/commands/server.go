@@ -192,11 +192,12 @@ func updateCommand() *cli.Command {
 
 func serveCommand() *cli.Command {
 	srvCfg := server.Config{}
-
+	sharedCfg, flags := config.GetSharedFlags()
 	return &cli.Command{
-		Name:  "serve",
-		Usage: "start the HTTP server",
-		Flags: []cli.Flag{
+		Name:    "serve",
+		Aliases: []string{"start"},
+		Usage:   "start the HTTP server",
+		Flags: append(flags,
 			&cli.StringFlag{
 				Name:        "host",
 				Usage:       "host interface to bind",
@@ -210,14 +211,13 @@ func serveCommand() *cli.Command {
 				Value:       8080,
 				Destination: &srvCfg.Port,
 				EnvVars:     []string{"PROJCONF_PORT"},
-			},
-		},
+			}),
 		Action: func(c *cli.Context) error {
 
-			globalCfg := config.GetGlobal()
+			srvCfg.AdminAPIKey = sharedCfg.AdminAPIKey
 
 			// Create HTTP server
-			srv, err := server.NewHTTPServer(srvCfg)
+			srv, err := server.NewHTTPServer(&srvCfg)
 			if err != nil {
 				return err
 			}
@@ -228,10 +228,11 @@ func serveCommand() *cli.Command {
 
 			cfg, _ := config.Load()
 			env := types.SharedEnv{
-				PGPASSWORD:  cfg.Supabase.Db.Password,
-				JWT_SECRET:  cfg.Supabase.JwtSecret,
-				ANON_KEY:    cfg.Supabase.Keys.Public,
-				SERVICE_KEY: cfg.Supabase.Keys.Private,
+				PGPASSWORD:             cfg.Supabase.Db.Password,
+				JWT_SECRET:             cfg.Supabase.JwtSecret,
+				ANON_KEY:               cfg.Supabase.Keys.Public,
+				SERVICE_KEY:            cfg.Supabase.Keys.Private,
+				PROJCONF_ADMIN_API_KEY: sharedCfg.AdminAPIKey,
 			}
 
 			services := docker.GetServices()
@@ -266,7 +267,7 @@ func serveCommand() *cli.Command {
 			go func() {
 				addr := fmt.Sprintf("%s:%d", srvCfg.Host, srvCfg.Port)
 				log.Printf("HTTP server listening on http://%s\n", addr)
-				log.Println(fmt.Sprintf("admin access token: %s", globalCfg.AdminAccessKey))
+				log.Println(fmt.Sprintf("admin access token: %s", sharedCfg.AdminAPIKey))
 				if err := srv.Serve(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 					errCh <- fmt.Errorf("http server error: %w", err)
 				}

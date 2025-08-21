@@ -114,9 +114,10 @@ func (srvc Service) GetArgs(sharedEvn *types.SharedEnv) []string {
 		"supabase/postgres:17.4.1.055",
 		"postgres",
 		"-c", "config_file=/etc/postgresql/postgresql.conf",
-		"-c", "log_min_messages=fatal",
+		"-c", "log_min_messages=error",
 		"-c", "wal_level=minimal",
 		"-c", "max_wal_senders=0",
+		"-c", fmt.Sprintf("projconf.x_admin_api_key=%s", sharedEvn.PROJCONF_ADMIN_API_KEY),
 	)
 
 	return args

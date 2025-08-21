@@ -5,15 +5,8 @@
  * commercial license.
  */
 
-package supabase
+package consts
 
-type AuthConfig struct {
-	Id          string
-	Secret      string
-	AdminAPIKey string
-}
-
-type Config struct {
-	Url     string
-	AnonKey string
-}
+const X_ADMIN_API_KEY = "x-admin-api-key"
+const X_CLIENT_SECRET_ID = "x-client-secret-id"
+const X_CLIENT_SECRET = "x-client-secret"

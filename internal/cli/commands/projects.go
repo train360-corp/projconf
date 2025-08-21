@@ -11,6 +11,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/train360-corp/projconf/internal/config"
+	"github.com/train360-corp/projconf/internal/consts"
 	"github.com/train360-corp/projconf/internal/server/api"
 	"github.com/train360-corp/projconf/internal/utils"
 	"github.com/urfave/cli/v2"
@@ -28,10 +29,14 @@ func ProjectsCommand() *cli.Command {
 }
 
 func ls() *cli.Command {
+
+	sharedCfg, flags := config.GetSharedFlags()
+
 	return &cli.Command{
 		Name:        "ls",
 		Usage:       "list accessible projects",
 		Description: "list accessible projects",
+		Flags:       flags,
 		Action: func(c *cli.Context) error {
 
 			cfg, err := config.Load()
@@ -40,8 +45,12 @@ func ls() *cli.Command {
 			}
 
 			client, err := api.NewClientWithResponses(cfg.Account.Url, api.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
-				req.Header.Add("x-client-secret-id", cfg.Account.Client.Id)
-				req.Header.Add("x-client-secret", cfg.Account.Client.Secret)
+				if sharedCfg.AdminAPIKey != "" {
+					req.Header.Add(consts.X_ADMIN_API_KEY, sharedCfg.AdminAPIKey)
+				} else {
+					req.Header.Add(consts.X_CLIENT_SECRET_ID, cfg.Account.Client.Id)
+					req.Header.Add(consts.X_CLIENT_SECRET, cfg.Account.Client.Secret)
+				}
 				return nil
 			}))
 

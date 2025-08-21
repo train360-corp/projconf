@@ -10,7 +10,7 @@ package commands
 import (
 	"fmt"
 	"github.com/train360-corp/projconf/internal/config"
-	"github.com/train360-corp/projconf/internal/validators"
+	"github.com/train360-corp/projconf/internal/utils/validators"
 	"github.com/urfave/cli/v2"
 	"reflect"
 	"strings"
@@ -67,6 +67,9 @@ func AuthCommand() *cli.Command {
 									fmt.Printf("set %s = %v\n", field.Name, value.Interface())
 									switch field.Name {
 									case "ClientId":
+										if !validators.IsValidUUID(value.String()) {
+											return cli.Exit("--client-id is not a valid UUID", 1)
+										}
 										cfg.Account.Client.Id = value.String()
 									case "ClientSecret":
 										cfg.Account.Client.Secret = value.String()

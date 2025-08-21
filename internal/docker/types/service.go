@@ -13,10 +13,11 @@ import (
 )
 
 type SharedEnv struct {
-	PGPASSWORD  string
-	JWT_SECRET  string
-	ANON_KEY    string
-	SERVICE_KEY string
+	PGPASSWORD             string
+	JWT_SECRET             string
+	ANON_KEY               string
+	SERVICE_KEY            string
+	PROJCONF_ADMIN_API_KEY string
 }
 
 type Writeable struct {

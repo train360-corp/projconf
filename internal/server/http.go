@@ -17,12 +17,12 @@ import (
 )
 
 type HTTPServer struct {
-	cfg    Config
+	cfg    *Config
 	router *gin.Engine
 	http   *http.Server
 }
 
-func NewHTTPServer(cfg Config) (*HTTPServer, error) {
+func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 
 	switch cfg.Mode {
 	case gin.DebugMode, gin.ReleaseMode, gin.TestMode:
@@ -35,7 +35,7 @@ func NewHTTPServer(cfg Config) (*HTTPServer, error) {
 	router.Use(gin.Recovery())
 
 	// authentication middleware
-	router.Use(auth())
+	router.Use(auth(cfg))
 
 	// use custom validation
 	swagger := api.MustSpec()
