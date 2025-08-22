@@ -184,6 +184,59 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /v1/projects/{project_id}/variables:
+    get:
+      tags:
+        - client
+        - admin
+      summary: Get varibales
+      description: Get all variables in a project
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The UUID of the project.
+      responses:
+        '200':
+          description: A list of variables.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Variables"
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    post:
+      tags:
+        - admin
+      summary: Create variable
+      description: Create a new variable in a project
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The UUID of the project.
+      requestBody:
+        $ref: '#/components/requestBodies/CreateVariableRequestBody'
+      responses:
+        '201':
+          description: Variable Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ID'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /v1/projects/{project_id}/environments/{environment_id}/secrets:
     get:
       tags:
@@ -220,6 +273,26 @@ paths:
 
 components:
 
+  requestBodies:
+    CreateVariableRequestBody:
+      required: true
+      description: Create Variable Request Body
+      content:
+        application/json:
+          schema:
+            allOf:
+              - type: object
+                properties:
+                  key:
+                    type: string
+                    description: the key in the environment
+                    pattern: ^[A-Z_][A-Z0-9_]*$
+                    minLength: 1
+                  generator:
+                    $ref: '#/components/schemas/SecretGenerator'
+                required:
+                  - key
+                  - generator
   responses:
     BadRequest:
       description: Bad RequestError
@@ -243,6 +316,38 @@ components:
           schema: { $ref: "#/components/schemas/Error" }
 
   schemas:
+    Variables:
+      type: array
+      items:
+        $ref: "#/components/schemas/Variable"
+    Variable:
+      type: object
+      properties:
+        description: { type: string }
+        generator_data:
+          description: arbitrary generator data payload, based on type
+          oneOf:
+            - type: object
+            - type: string
+            - type: number
+            - type: boolean
+            - type: array
+              items: {}
+        generator_type: { $ref: '#/components/schemas/GeneratorType' }
+        id:
+          type: string
+          format: uuid
+        key: { type: string }
+        project_id:
+          type: string
+          format: uuid
+      required:
+        - description
+        - generator_data
+        - generator_type
+        - id
+        - key
+        - project_id
     Environments:
       type: array
       items:
@@ -289,3 +394,69 @@ components:
       required:
         - error
         - description
+    ##############################
+    #     SECRETS GENERATORS     #
+    ##############################
+    GeneratorType:
+      type: string
+      enum:
+        - STATIC
+        - RANDOM
+    StaticGeneratorData:
+      type: string
+    RandomGeneratorData:
+      type: object
+      properties:
+        length:
+          type: number
+          minimum: 1
+        letters:
+          type: boolean
+        numbers:
+          type: boolean
+        symbols:
+          type: boolean
+      required:
+        - length
+        - letters
+        - numbers
+        - symbols
+    # Base (optional, for reuse)
+    SecretGeneratorBase:
+      type: object
+      required: [ type, data ]
+      properties:
+        type:
+          $ref: '#/components/schemas/GeneratorType'
+        data: { }  # overridden in subtypes
+    # Concrete variants
+    SecretGeneratorStatic:
+      allOf:
+        - $ref: '#/components/schemas/SecretGeneratorBase'
+        - type: object
+          properties:
+            type:
+              type: string
+              enum: [ STATIC ]
+            data:
+              $ref: '#/components/schemas/StaticGeneratorData'
+    SecretGeneratorRandom:
+      allOf:
+        - $ref: '#/components/schemas/SecretGeneratorBase'
+        - type: object
+          properties:
+            type:
+              type: string
+              enum: [ RANDOM ]
+            data:
+              $ref: '#/components/schemas/RandomGeneratorData'
+    # Polymorphic entry point
+    SecretGenerator:
+      oneOf:
+        - $ref: '#/components/schemas/SecretGeneratorStatic'
+        - $ref: '#/components/schemas/SecretGeneratorRandom'
+      discriminator:
+        propertyName: type
+        mapping:
+          STATIC: '#/components/schemas/SecretGeneratorStatic'
+          RANDOM: '#/components/schemas/SecretGeneratorRandom'

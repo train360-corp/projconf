@@ -84,17 +84,23 @@ func getList[T any](client *Client, table string, filter string) (*[]T, error) {
 }
 
 func (c *Client) GetEnvironments(projectID *uuid.UUID) (*[]database.PublicEnvironmentsSelect, error) {
-
 	var filter string
 	if projectID != nil {
 		filter = fmt.Sprintf("project_id=eq.%s", projectID.String())
 	}
-
 	return getList[database.PublicEnvironmentsSelect](c, "environments", filter)
 }
 
 func (c *Client) GetProjects() (*[]database.PublicProjectsSelect, error) {
 	return getList[database.PublicProjectsSelect](c, "projects", "")
+}
+
+func (c *Client) GetVariables(projectID *uuid.UUID) (*[]database.PublicVariablesSelect, error) {
+	var filter string
+	if projectID != nil {
+		filter = fmt.Sprintf("project_id=eq.%s", projectID.String())
+	}
+	return getList[database.PublicVariablesSelect](c, "variables", filter)
 }
 
 func (c *Client) GetSelf() (*database.PublicClientsSelect, error) {

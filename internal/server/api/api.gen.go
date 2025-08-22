@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,22 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
+)
+
+// Defines values for GeneratorType.
+const (
+	GeneratorTypeRANDOM GeneratorType = "RANDOM"
+	GeneratorTypeSTATIC GeneratorType = "STATIC"
+)
+
+// Defines values for SecretGeneratorRandomType.
+const (
+	SecretGeneratorRandomTypeRANDOM SecretGeneratorRandomType = "RANDOM"
+)
+
+// Defines values for SecretGeneratorStaticType.
+const (
+	STATIC SecretGeneratorStaticType = "STATIC"
 )
 
 // Environment defines model for Environment.
@@ -33,9 +50,20 @@ type Error struct {
 	Error       string `json:"error"`
 }
 
+// GeneratorType defines model for GeneratorType.
+type GeneratorType string
+
 // ID defines model for ID.
 type ID struct {
 	Id openapi_types.UUID `json:"id"`
+}
+
+// RandomGeneratorData defines model for RandomGeneratorData.
+type RandomGeneratorData struct {
+	Length  float32 `json:"length"`
+	Letters bool    `json:"letters"`
+	Numbers bool    `json:"numbers"`
+	Symbols bool    `json:"symbols"`
 }
 
 // Secret defines model for Secret.
@@ -44,8 +72,75 @@ type Secret struct {
 	Value string `json:"value"`
 }
 
+// SecretGenerator defines model for SecretGenerator.
+type SecretGenerator struct {
+	union json.RawMessage
+}
+
+// SecretGeneratorBase defines model for SecretGeneratorBase.
+type SecretGeneratorBase struct {
+	Data interface{}   `json:"data"`
+	Type GeneratorType `json:"type"`
+}
+
+// SecretGeneratorRandom defines model for SecretGeneratorRandom.
+type SecretGeneratorRandom struct {
+	Data RandomGeneratorData       `json:"data"`
+	Type SecretGeneratorRandomType `json:"type"`
+}
+
+// SecretGeneratorRandomType defines model for SecretGeneratorRandom.Type.
+type SecretGeneratorRandomType string
+
+// SecretGeneratorStatic defines model for SecretGeneratorStatic.
+type SecretGeneratorStatic struct {
+	Data StaticGeneratorData       `json:"data"`
+	Type SecretGeneratorStaticType `json:"type"`
+}
+
+// SecretGeneratorStaticType defines model for SecretGeneratorStatic.Type.
+type SecretGeneratorStaticType string
+
 // Secrets defines model for Secrets.
 type Secrets = []Secret
+
+// StaticGeneratorData defines model for StaticGeneratorData.
+type StaticGeneratorData = string
+
+// Variable defines model for Variable.
+type Variable struct {
+	Description string `json:"description"`
+
+	// GeneratorData arbitrary generator data payload, based on type
+	GeneratorData Variable_GeneratorData `json:"generator_data"`
+	GeneratorType GeneratorType          `json:"generator_type"`
+	Id            openapi_types.UUID     `json:"id"`
+	Key           string                 `json:"key"`
+	ProjectId     openapi_types.UUID     `json:"project_id"`
+}
+
+// VariableGeneratorData0 defines model for .
+type VariableGeneratorData0 = map[string]interface{}
+
+// VariableGeneratorData1 defines model for .
+type VariableGeneratorData1 = string
+
+// VariableGeneratorData2 defines model for .
+type VariableGeneratorData2 = float32
+
+// VariableGeneratorData3 defines model for .
+type VariableGeneratorData3 = bool
+
+// VariableGeneratorData4 defines model for .
+type VariableGeneratorData4 = []interface{}
+
+// Variable_GeneratorData arbitrary generator data payload, based on type
+type Variable_GeneratorData struct {
+	union json.RawMessage
+}
+
+// Variables defines model for Variables.
+type Variables = []Variable
 
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
@@ -59,6 +154,14 @@ type InternalServerError = Error
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
+// CreateVariableRequestBody defines model for CreateVariableRequestBody.
+type CreateVariableRequestBody struct {
+	Generator SecretGenerator `json:"generator"`
+
+	// Key the key in the environment
+	Key string `json:"key"`
+}
+
 // PostV1ProjectsJSONBody defines parameters for PostV1Projects.
 type PostV1ProjectsJSONBody struct {
 	// Name project name (must be unique)
@@ -71,11 +174,251 @@ type PostV1ProjectsProjectIdEnvironmentsJSONBody struct {
 	Name string `json:"name"`
 }
 
+// PostV1ProjectsProjectIdVariablesJSONBody defines parameters for PostV1ProjectsProjectIdVariables.
+type PostV1ProjectsProjectIdVariablesJSONBody struct {
+	Generator SecretGenerator `json:"generator"`
+
+	// Key the key in the environment
+	Key string `json:"key"`
+}
+
 // PostV1ProjectsJSONRequestBody defines body for PostV1Projects for application/json ContentType.
 type PostV1ProjectsJSONRequestBody PostV1ProjectsJSONBody
 
 // PostV1ProjectsProjectIdEnvironmentsJSONRequestBody defines body for PostV1ProjectsProjectIdEnvironments for application/json ContentType.
 type PostV1ProjectsProjectIdEnvironmentsJSONRequestBody PostV1ProjectsProjectIdEnvironmentsJSONBody
+
+// PostV1ProjectsProjectIdVariablesJSONRequestBody defines body for PostV1ProjectsProjectIdVariables for application/json ContentType.
+type PostV1ProjectsProjectIdVariablesJSONRequestBody PostV1ProjectsProjectIdVariablesJSONBody
+
+// AsSecretGeneratorStatic returns the union data inside the SecretGenerator as a SecretGeneratorStatic
+func (t SecretGenerator) AsSecretGeneratorStatic() (SecretGeneratorStatic, error) {
+	var body SecretGeneratorStatic
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecretGeneratorStatic overwrites any union data inside the SecretGenerator as the provided SecretGeneratorStatic
+func (t *SecretGenerator) FromSecretGeneratorStatic(v SecretGeneratorStatic) error {
+	v.Type = "STATIC"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecretGeneratorStatic performs a merge with any union data inside the SecretGenerator, using the provided SecretGeneratorStatic
+func (t *SecretGenerator) MergeSecretGeneratorStatic(v SecretGeneratorStatic) error {
+	v.Type = "STATIC"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecretGeneratorRandom returns the union data inside the SecretGenerator as a SecretGeneratorRandom
+func (t SecretGenerator) AsSecretGeneratorRandom() (SecretGeneratorRandom, error) {
+	var body SecretGeneratorRandom
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecretGeneratorRandom overwrites any union data inside the SecretGenerator as the provided SecretGeneratorRandom
+func (t *SecretGenerator) FromSecretGeneratorRandom(v SecretGeneratorRandom) error {
+	v.Type = "RANDOM"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecretGeneratorRandom performs a merge with any union data inside the SecretGenerator, using the provided SecretGeneratorRandom
+func (t *SecretGenerator) MergeSecretGeneratorRandom(v SecretGeneratorRandom) error {
+	v.Type = "RANDOM"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecretGenerator) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t SecretGenerator) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "RANDOM":
+		return t.AsSecretGeneratorRandom()
+	case "STATIC":
+		return t.AsSecretGeneratorStatic()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t SecretGenerator) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecretGenerator) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsVariableGeneratorData0 returns the union data inside the Variable_GeneratorData as a VariableGeneratorData0
+func (t Variable_GeneratorData) AsVariableGeneratorData0() (VariableGeneratorData0, error) {
+	var body VariableGeneratorData0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromVariableGeneratorData0 overwrites any union data inside the Variable_GeneratorData as the provided VariableGeneratorData0
+func (t *Variable_GeneratorData) FromVariableGeneratorData0(v VariableGeneratorData0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeVariableGeneratorData0 performs a merge with any union data inside the Variable_GeneratorData, using the provided VariableGeneratorData0
+func (t *Variable_GeneratorData) MergeVariableGeneratorData0(v VariableGeneratorData0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsVariableGeneratorData1 returns the union data inside the Variable_GeneratorData as a VariableGeneratorData1
+func (t Variable_GeneratorData) AsVariableGeneratorData1() (VariableGeneratorData1, error) {
+	var body VariableGeneratorData1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromVariableGeneratorData1 overwrites any union data inside the Variable_GeneratorData as the provided VariableGeneratorData1
+func (t *Variable_GeneratorData) FromVariableGeneratorData1(v VariableGeneratorData1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeVariableGeneratorData1 performs a merge with any union data inside the Variable_GeneratorData, using the provided VariableGeneratorData1
+func (t *Variable_GeneratorData) MergeVariableGeneratorData1(v VariableGeneratorData1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsVariableGeneratorData2 returns the union data inside the Variable_GeneratorData as a VariableGeneratorData2
+func (t Variable_GeneratorData) AsVariableGeneratorData2() (VariableGeneratorData2, error) {
+	var body VariableGeneratorData2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromVariableGeneratorData2 overwrites any union data inside the Variable_GeneratorData as the provided VariableGeneratorData2
+func (t *Variable_GeneratorData) FromVariableGeneratorData2(v VariableGeneratorData2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeVariableGeneratorData2 performs a merge with any union data inside the Variable_GeneratorData, using the provided VariableGeneratorData2
+func (t *Variable_GeneratorData) MergeVariableGeneratorData2(v VariableGeneratorData2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsVariableGeneratorData3 returns the union data inside the Variable_GeneratorData as a VariableGeneratorData3
+func (t Variable_GeneratorData) AsVariableGeneratorData3() (VariableGeneratorData3, error) {
+	var body VariableGeneratorData3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromVariableGeneratorData3 overwrites any union data inside the Variable_GeneratorData as the provided VariableGeneratorData3
+func (t *Variable_GeneratorData) FromVariableGeneratorData3(v VariableGeneratorData3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeVariableGeneratorData3 performs a merge with any union data inside the Variable_GeneratorData, using the provided VariableGeneratorData3
+func (t *Variable_GeneratorData) MergeVariableGeneratorData3(v VariableGeneratorData3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsVariableGeneratorData4 returns the union data inside the Variable_GeneratorData as a VariableGeneratorData4
+func (t Variable_GeneratorData) AsVariableGeneratorData4() (VariableGeneratorData4, error) {
+	var body VariableGeneratorData4
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromVariableGeneratorData4 overwrites any union data inside the Variable_GeneratorData as the provided VariableGeneratorData4
+func (t *Variable_GeneratorData) FromVariableGeneratorData4(v VariableGeneratorData4) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeVariableGeneratorData4 performs a merge with any union data inside the Variable_GeneratorData, using the provided VariableGeneratorData4
+func (t *Variable_GeneratorData) MergeVariableGeneratorData4(v VariableGeneratorData4) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t Variable_GeneratorData) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *Variable_GeneratorData) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -174,6 +517,14 @@ type ClientInterface interface {
 
 	// GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecrets request
 	GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecrets(ctx context.Context, projectId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetV1ProjectsProjectIdVariables request
+	GetV1ProjectsProjectIdVariables(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostV1ProjectsProjectIdVariablesWithBody request with any body
+	PostV1ProjectsProjectIdVariablesWithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostV1ProjectsProjectIdVariables(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdVariablesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) GetV1AdminHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -274,6 +625,42 @@ func (c *Client) PostV1ProjectsProjectIdEnvironments(ctx context.Context, projec
 
 func (c *Client) GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecrets(ctx context.Context, projectId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsRequest(c.Server, projectId, environmentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetV1ProjectsProjectIdVariables(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetV1ProjectsProjectIdVariablesRequest(c.Server, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostV1ProjectsProjectIdVariablesWithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostV1ProjectsProjectIdVariablesRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostV1ProjectsProjectIdVariables(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdVariablesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostV1ProjectsProjectIdVariablesRequest(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -527,6 +914,87 @@ func NewGetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsRequest(server str
 	return req, nil
 }
 
+// NewGetV1ProjectsProjectIdVariablesRequest generates requests for GetV1ProjectsProjectIdVariables
+func NewGetV1ProjectsProjectIdVariablesRequest(server string, projectId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "project_id", runtime.ParamLocationPath, projectId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/variables", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostV1ProjectsProjectIdVariablesRequest calls the generic PostV1ProjectsProjectIdVariables builder with application/json body
+func NewPostV1ProjectsProjectIdVariablesRequest(server string, projectId openapi_types.UUID, body PostV1ProjectsProjectIdVariablesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostV1ProjectsProjectIdVariablesRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewPostV1ProjectsProjectIdVariablesRequestWithBody generates requests for PostV1ProjectsProjectIdVariables with any type of body
+func NewPostV1ProjectsProjectIdVariablesRequestWithBody(server string, projectId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "project_id", runtime.ParamLocationPath, projectId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/variables", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -594,6 +1062,14 @@ type ClientWithResponsesInterface interface {
 
 	// GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsWithResponse request
 	GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsWithResponse(ctx context.Context, projectId openapi_types.UUID, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsResponse, error)
+
+	// GetV1ProjectsProjectIdVariablesWithResponse request
+	GetV1ProjectsProjectIdVariablesWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetV1ProjectsProjectIdVariablesResponse, error)
+
+	// PostV1ProjectsProjectIdVariablesWithBodyWithResponse request with any body
+	PostV1ProjectsProjectIdVariablesWithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdVariablesResponse, error)
+
+	PostV1ProjectsProjectIdVariablesWithResponse(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdVariablesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdVariablesResponse, error)
 }
 
 type GetV1AdminHealthResponse struct {
@@ -789,6 +1265,58 @@ func (r GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsResponse) StatusCo
 	return 0
 }
 
+type GetV1ProjectsProjectIdVariablesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Variables
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetV1ProjectsProjectIdVariablesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetV1ProjectsProjectIdVariablesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostV1ProjectsProjectIdVariablesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *ID
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r PostV1ProjectsProjectIdVariablesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostV1ProjectsProjectIdVariablesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // GetV1AdminHealthWithResponse request returning *GetV1AdminHealthResponse
 func (c *ClientWithResponses) GetV1AdminHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetV1AdminHealthResponse, error) {
 	rsp, err := c.GetV1AdminHealth(ctx, reqEditors...)
@@ -866,6 +1394,32 @@ func (c *ClientWithResponses) GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSec
 		return nil, err
 	}
 	return ParseGetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsResponse(rsp)
+}
+
+// GetV1ProjectsProjectIdVariablesWithResponse request returning *GetV1ProjectsProjectIdVariablesResponse
+func (c *ClientWithResponses) GetV1ProjectsProjectIdVariablesWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetV1ProjectsProjectIdVariablesResponse, error) {
+	rsp, err := c.GetV1ProjectsProjectIdVariables(ctx, projectId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetV1ProjectsProjectIdVariablesResponse(rsp)
+}
+
+// PostV1ProjectsProjectIdVariablesWithBodyWithResponse request with arbitrary body returning *PostV1ProjectsProjectIdVariablesResponse
+func (c *ClientWithResponses) PostV1ProjectsProjectIdVariablesWithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdVariablesResponse, error) {
+	rsp, err := c.PostV1ProjectsProjectIdVariablesWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostV1ProjectsProjectIdVariablesResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostV1ProjectsProjectIdVariablesWithResponse(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdVariablesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdVariablesResponse, error) {
+	rsp, err := c.PostV1ProjectsProjectIdVariables(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostV1ProjectsProjectIdVariablesResponse(rsp)
 }
 
 // ParseGetV1AdminHealthResponse parses an HTTP response from a GetV1AdminHealthWithResponse call
@@ -1257,6 +1811,114 @@ func ParseGetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecretsResponse(rsp *ht
 	return response, nil
 }
 
+// ParseGetV1ProjectsProjectIdVariablesResponse parses an HTTP response from a GetV1ProjectsProjectIdVariablesWithResponse call
+func ParseGetV1ProjectsProjectIdVariablesResponse(rsp *http.Response) (*GetV1ProjectsProjectIdVariablesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetV1ProjectsProjectIdVariablesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Variables
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostV1ProjectsProjectIdVariablesResponse parses an HTTP response from a PostV1ProjectsProjectIdVariablesWithResponse call
+func ParsePostV1ProjectsProjectIdVariablesResponse(rsp *http.Response) (*PostV1ProjectsProjectIdVariablesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostV1ProjectsProjectIdVariablesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ID
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Get health
@@ -1280,6 +1942,12 @@ type ServerInterface interface {
 	// List secrets
 	// (GET /v1/projects/{project_id}/environments/{environment_id}/secrets)
 	GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecrets(c *gin.Context, projectId openapi_types.UUID, environmentId openapi_types.UUID)
+	// Get varibales
+	// (GET /v1/projects/{project_id}/variables)
+	GetV1ProjectsProjectIdVariables(c *gin.Context, projectId openapi_types.UUID)
+	// Create variable
+	// (POST /v1/projects/{project_id}/variables)
+	PostV1ProjectsProjectIdVariables(c *gin.Context, projectId openapi_types.UUID)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -1424,6 +2092,54 @@ func (siw *ServerInterfaceWrapper) GetV1ProjectsProjectIdEnvironmentsEnvironment
 	siw.Handler.GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecrets(c, projectId, environmentId)
 }
 
+// GetV1ProjectsProjectIdVariables operation middleware
+func (siw *ServerInterfaceWrapper) GetV1ProjectsProjectIdVariables(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", c.Param("project_id"), &projectId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter project_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetV1ProjectsProjectIdVariables(c, projectId)
+}
+
+// PostV1ProjectsProjectIdVariables operation middleware
+func (siw *ServerInterfaceWrapper) PostV1ProjectsProjectIdVariables(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", c.Param("project_id"), &projectId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter project_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PostV1ProjectsProjectIdVariables(c, projectId)
+}
+
 // GinServerOptions provides options for the Gin server.
 type GinServerOptions struct {
 	BaseURL      string
@@ -1458,4 +2174,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/projects/:project_id/environments", wrapper.GetV1ProjectsProjectIdEnvironments)
 	router.POST(options.BaseURL+"/v1/projects/:project_id/environments", wrapper.PostV1ProjectsProjectIdEnvironments)
 	router.GET(options.BaseURL+"/v1/projects/:project_id/environments/:environment_id/secrets", wrapper.GetV1ProjectsProjectIdEnvironmentsEnvironmentIdSecrets)
+	router.GET(options.BaseURL+"/v1/projects/:project_id/variables", wrapper.GetV1ProjectsProjectIdVariables)
+	router.POST(options.BaseURL+"/v1/projects/:project_id/variables", wrapper.PostV1ProjectsProjectIdVariables)
 }

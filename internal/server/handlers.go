@@ -8,6 +8,7 @@
 package server
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	openapitypes "github.com/oapi-codegen/runtime/types"
@@ -26,6 +27,84 @@ func GetServerInterface() api.ServerInterface {
 
 // RouteHandlers implements api.ServerInterface (generated).
 type RouteHandlers struct{}
+
+func (s *RouteHandlers) GetV1ProjectsProjectIdVariables(c *gin.Context, projectId openapitypes.UUID) {
+	sb := supabase.GetFromContext(c)
+	id, _ := uuid.Parse(projectId.String())
+	if variables, err := sb.GetVariables(&id); err != nil {
+		c.AbortWithStatusJSON(http.StatusForbidden, api.Error{
+			Error:       "unable to get variables",
+			Description: err.Error(),
+		})
+	} else {
+		vars := make(api.Variables, len(*variables))
+		var id uuid.UUID
+		for i, e := range *variables {
+			id, _ = uuid.Parse(e.Id)
+			vars[i] = api.Variable{
+				Description:   e.Description,
+				GeneratorData: api.Variable_GeneratorData{},
+				GeneratorType: api.GeneratorType(e.GeneratorType),
+				Id:            id,
+				Key:           e.Key,
+				ProjectId:     projectId,
+			}
+		}
+		c.JSON(http.StatusOK, vars)
+	}
+}
+
+func (s *RouteHandlers) PostV1ProjectsProjectIdVariables(c *gin.Context, projectId openapitypes.UUID) {
+	var req api.PostV1ProjectsProjectIdVariablesJSONRequestBody
+	c.BindJSON(&req)
+
+	sb := supabase.GetFromContext(c)
+	id := uuid.New().String()
+	description := ""
+	insert := database.PublicVariablesInsert{
+		Description: &description,
+		Id:          &id,
+		Key:         req.Key,
+		ProjectId:   projectId.String(),
+	}
+
+	typ, _ := req.Generator.Discriminator()
+	switch api.GeneratorType(typ) {
+	case api.GeneratorTypeRANDOM:
+		r, _ := req.Generator.AsSecretGeneratorRandom()
+		insert.GeneratorData = r.Data
+		insert.GeneratorType = string(r.Type)
+	case api.GeneratorTypeSTATIC:
+		r, _ := req.Generator.AsSecretGeneratorStatic()
+		insert.GeneratorData = r.Data
+		insert.GeneratorType = string(r.Type)
+	default:
+		c.AbortWithStatusJSON(http.StatusInternalServerError, api.Error{
+			Error:       "unable to create variable",
+			Description: fmt.Sprintf("type \"%s\" is unhandled", typ),
+		})
+		return
+	}
+
+	if variable, err := sb.PostVariable(insert); err != nil {
+		if strings.Index(err.Error(), "new row violates row-level security policy for table") != -1 {
+			c.AbortWithStatusJSON(http.StatusForbidden, api.Error{
+				Error:       "unable to create variable",
+				Description: "permission denied",
+			})
+		} else {
+			c.AbortWithStatusJSON(http.StatusBadRequest, api.Error{
+				Error:       "unable to create variable",
+				Description: err.Error(),
+			})
+		}
+	} else {
+		id, _ := uuid.Parse(variable.Id)
+		c.JSON(http.StatusOK, api.ID{
+			Id: id,
+		})
+	}
+}
 
 func (s *RouteHandlers) GetV1ProjectsProjectIdEnvironments(c *gin.Context, projectId openapitypes.UUID) {
 	sb := supabase.GetFromContext(c)
@@ -62,9 +141,7 @@ func (s *RouteHandlers) GetV1Projects(c *gin.Context) {
 
 func (s *RouteHandlers) PostV1ProjectsProjectIdEnvironments(c *gin.Context, projectId openapitypes.UUID) {
 
-	var req struct {
-		Name string `json:"name"`
-	}
+	var req api.PostV1ProjectsProjectIdEnvironmentsJSONRequestBody
 	c.BindJSON(&req)
 
 	sb := supabase.GetFromContext(c)
@@ -97,9 +174,7 @@ func (s *RouteHandlers) PostV1ProjectsProjectIdEnvironments(c *gin.Context, proj
 
 func (s *RouteHandlers) PostV1Projects(c *gin.Context) {
 
-	var req struct {
-		Name string `json:"name"`
-	}
+	var req api.PostV1ProjectsJSONRequestBody
 	c.BindJSON(&req)
 
 	sb := supabase.GetFromContext(c)

@@ -70,3 +70,7 @@ func (c *Client) PostProject(row database.PublicProjectsInsert) (*database.Publi
 func (c *Client) PostEnvironment(row database.PublicEnvironmentsInsert) (*database.PublicEnvironmentsSelect, error) {
 	return post[database.PublicEnvironmentsSelect](c, "environments", row)
 }
+
+func (c *Client) PostVariable(row database.PublicVariablesInsert) (*database.PublicVariablesSelect, error) {
+	return post[database.PublicVariablesSelect](c, "variables", row)
+}

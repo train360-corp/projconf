@@ -36,6 +36,7 @@ func Get() *cli.App {
 			commands.AuthCommand(),
 			commands.ProjectsCommand(),
 			commands.EnvironmentsCommand(),
+			commands.VariablesCommand(),
 		},
 	}
 }
