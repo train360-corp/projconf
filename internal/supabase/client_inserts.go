@@ -74,3 +74,7 @@ func (c *Client) PostEnvironment(row database.PublicEnvironmentsInsert) (*databa
 func (c *Client) PostVariable(row database.PublicVariablesInsert) (*database.PublicVariablesSelect, error) {
 	return post[database.PublicVariablesSelect](c, "variables", row)
 }
+
+func (c *Client) CreateClient(req database.PublicRpcCreateClientAndSecretRequest) (*database.PublicRpcCreateClientAndSecretResponse, error) {
+	return post[database.PublicRpcCreateClientAndSecretResponse](c, "rpc/create_client_and_secret", req)
+}

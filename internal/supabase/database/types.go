@@ -7,3 +7,14 @@
 
 //go:generate sh -c "supabase gen types --lang=go --local > types.gen.go"
 package database
+
+type PublicRpcCreateClientAndSecretRequest struct {
+	Display       string `json:"p_display"`
+	EnvironmentId string `json:"p_env_id"`
+}
+
+type PublicRpcCreateClientAndSecretResponse struct {
+	ClientId string `json:"client_id"`
+	SecretId string `json:"secret_id"`
+	Secret   string `json:"secret"`
+}

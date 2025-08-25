@@ -43,24 +43,24 @@ type PublicVariablesUpdate struct {
 }
 
 type PublicClientsSelect struct {
-  CreatedAt string `json:"created_at"`
-  Display   string `json:"display"`
-  Id        string `json:"id"`
-  ProjectId string `json:"project_id"`
+  CreatedAt     string `json:"created_at"`
+  Display       string `json:"display"`
+  EnvironmentId string `json:"environment_id"`
+  Id            string `json:"id"`
 }
 
 type PublicClientsInsert struct {
-  CreatedAt *string `json:"created_at"`
-  Display   *string `json:"display"`
-  Id        *string `json:"id"`
-  ProjectId string  `json:"project_id"`
+  CreatedAt     *string `json:"created_at"`
+  Display       *string `json:"display"`
+  EnvironmentId string  `json:"environment_id"`
+  Id            *string `json:"id"`
 }
 
 type PublicClientsUpdate struct {
-  CreatedAt *string `json:"created_at"`
-  Display   *string `json:"display"`
-  Id        *string `json:"id"`
-  ProjectId *string `json:"project_id"`
+  CreatedAt     *string `json:"created_at"`
+  Display       *string `json:"display"`
+  EnvironmentId *string `json:"environment_id"`
+  Id            *string `json:"id"`
 }
 
 type PublicClientsSecretsSelect struct {
@@ -109,7 +109,6 @@ type PublicSecretsSelect struct {
   CreatedAt     string `json:"created_at"`
   EnvironmentId string `json:"environment_id"`
   Id            string `json:"id"`
-  ProjectId     string `json:"project_id"`
   Value         string `json:"value"`
   VariableId    string `json:"variable_id"`
 }
@@ -118,7 +117,6 @@ type PublicSecretsInsert struct {
   CreatedAt     *string `json:"created_at"`
   EnvironmentId string  `json:"environment_id"`
   Id            *string `json:"id"`
-  ProjectId     string  `json:"project_id"`
   Value         *string `json:"value"`
   VariableId    string  `json:"variable_id"`
 }
@@ -127,7 +125,6 @@ type PublicSecretsUpdate struct {
   CreatedAt     *string `json:"created_at"`
   EnvironmentId *string `json:"environment_id"`
   Id            *string `json:"id"`
-  ProjectId     *string `json:"project_id"`
   Value         *string `json:"value"`
   VariableId    *string `json:"variable_id"`
 }

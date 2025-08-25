@@ -43,18 +43,25 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                  created_at:
-                    type: string
-                  display:
-                    type: string
-                  project_id:
-                    type: string
-                    format: uuid
+                $ref: '#/components/schemas/ClientRepresentation'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /v1/clients/secrets:
+    get:
+      tags:
+        - client
+      summary: Get secrets
+      description: Returns the secrets accessible by the currently-authenticated client.
+      responses:
+        '200':
+          description: secrets object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Secrets'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -237,7 +244,42 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
-  /v1/projects/{project_id}/environments/{environment_id}/secrets:
+  /v1/projects/_/environments/{environment_id}/clients:
+    post:
+      tags:
+        - admin
+      summary: Create client
+      description: Create a new client
+      parameters:
+        - name: environment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The UUID of the environment.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: client name
+                  pattern: ^[[:alnum:] _]+$
+                  minLength: 1
+              required:
+                - name
+      responses:
+        '201': { $ref: '#/components/responses/CreateClientResponse'}
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /v1/environments/{environment_id}/secrets:
     get:
       tags:
         - client
@@ -245,13 +287,6 @@ paths:
       summary: List secrets
       description: Returns all secrets for a given project environment.
       parameters:
-        - name: project_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: The UUID of the project.
         - name: environment_id
           in: path
           required: true
@@ -294,6 +329,30 @@ components:
                   - key
                   - generator
   responses:
+    CreateClientResponse:
+      description: Created Client
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+              - secret
+            properties:
+              id:
+                type: string
+                format: uuid
+              secret:
+                type: object
+                required:
+                  - id
+                  - key
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  key:
+                    type: string
     BadRequest:
       description: Bad RequestError
       content:
@@ -316,6 +375,24 @@ components:
           schema: { $ref: "#/components/schemas/Error" }
 
   schemas:
+    ClientRepresentation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+        display:
+          type: string
+        environment_id:
+          type: string
+          format: uuid
+      required:
+        - id
+        - created_at
+        - display
+        - environment_id
     Variables:
       type: array
       items:
@@ -332,7 +409,7 @@ components:
             - type: number
             - type: boolean
             - type: array
-              items: {}
+              items: { }
         generator_type: { $ref: '#/components/schemas/GeneratorType' }
         id:
           type: string
@@ -368,14 +445,54 @@ components:
         $ref: "#/components/schemas/Secret"
     Secret:
       type: object
+      description: Binding of a Secret to a Variable and an Environment (with nested Project), modeled in a single schema.
+      required: [ id, value, variable, environment ]
       properties:
-        key:
+        id:
           type: string
+          format: uuid
         value:
           type: string
-      required:
-        - key
-        - value
+        variable:
+          type: object
+          required: [ id, key ]
+          properties:
+            id:
+              type: string
+              format: uuid
+            key:
+              type: string
+              description: Variable key/name (e.g., "HOST")
+        environment:
+          type: object
+          required: [ id, display, project ]
+          properties:
+            id:
+              type: string
+              format: uuid
+            display:
+              type: string
+            project:
+              type: object
+              required: [ id, display ]
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                display:
+                  type: string
+      example:
+        id: da29223b-8ef3-4b40-92a7-56a924c7e720
+        value: 127.0.0.1
+        variable:
+          id: bc928af2-58ae-4384-8e84-7d2d91e852b7
+          key: HOST
+        environment:
+          id: 6b74da6e-3690-401d-83a5-a8fe3c10fe94
+          display: Prod
+          project:
+            id: 94ab1156-5b42-499f-b8aa-92ca45dfa180
+            display: MVP
     ID:
       type: object
       properties:

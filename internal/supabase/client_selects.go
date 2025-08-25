@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/train360-corp/projconf/internal/consts"
+	"github.com/train360-corp/projconf/internal/server/api"
 	"github.com/train360-corp/projconf/internal/supabase/database"
 	"io"
 	"net/http"
@@ -83,6 +84,33 @@ func getList[T any](client *Client, table string, filter string) (*[]T, error) {
 	return &out, nil
 }
 
+func (c *Client) GetEnvironment(id *uuid.UUID) (*database.PublicEnvironmentsSelect, error) {
+	endpoint := fmt.Sprintf("/rest/v1/environments?id=eq.%s", id.String())
+	res, err := c.get(&request{
+		endpoint: endpoint,
+		single:   true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("GET %s: status %d: %s", "environments", res.StatusCode, string(body))
+	}
+
+	var out database.PublicEnvironmentsSelect
+	if err := json.Unmarshal(body, &out); err != nil {
+		return nil, fmt.Errorf("decode %s: %w", "environments", err)
+	}
+	return &out, nil
+}
+
 func (c *Client) GetEnvironments(projectID *uuid.UUID) (*[]database.PublicEnvironmentsSelect, error) {
 	var filter string
 	if projectID != nil {
@@ -140,18 +168,13 @@ func (c *Client) GetSelf() (*database.PublicClientsSelect, error) {
 	return c.self, nil
 }
 
-type GetSecretsVariable struct {
-	Key string `json:"key"`
-}
+func (c *Client) GetSecrets(environmentId string) (api.Secrets, error) {
 
-type GetSecretsSecret struct {
-	Value     string             `json:"value"`
-	Variables GetSecretsVariable `json:"variables"`
-}
+	endpoint := "/rest/v1/secrets?select=id%2Cvalue%2Cvariable%3Avariable_id(id%2Ckey)%2Cenvironment%3Aenvironment_id(id%2Cdisplay%2Cproject%3Aproject_id(id%2Cdisplay))"
+	if environmentId != "" {
+		endpoint = fmt.Sprintf("%s&environment_id=eq.%s", endpoint, environmentId)
+	}
 
-func (c *Client) GetSecrets(projectId string, environmentId string) ([]GetSecretsSecret, error) {
-
-	endpoint := fmt.Sprintf("/rest/v1/secrets?select=value%%2Cvariables(key)&project_id=eq.%s&environment_id=eq.%s", projectId, environmentId)
 	res, err := c.get(&request{
 		endpoint: endpoint,
 		single:   false,
@@ -172,7 +195,7 @@ func (c *Client) GetSecrets(projectId string, environmentId string) ([]GetSecret
 		return nil, errors.New("unable to load secrets")
 	}
 
-	var secrets []GetSecretsSecret
+	var secrets api.Secrets
 	if err := json.Unmarshal(body, &secrets); err != nil {
 		return nil, err
 	}
