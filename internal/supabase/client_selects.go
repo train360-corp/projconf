@@ -119,6 +119,10 @@ func (c *Client) GetEnvironments(projectID *uuid.UUID) (*[]database.PublicEnviro
 	return getList[database.PublicEnvironmentsSelect](c, "environments", filter)
 }
 
+func (c *Client) GetClients(environmentId *uuid.UUID) (*[]database.PublicClientsSelect, error) {
+	return getList[database.PublicClientsSelect](c, "clients", fmt.Sprintf("environment_id=eq.%s", environmentId.String()))
+}
+
 func (c *Client) GetProjects() (*[]database.PublicProjectsSelect, error) {
 	return getList[database.PublicProjectsSelect](c, "projects", "")
 }

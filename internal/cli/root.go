@@ -39,6 +39,7 @@ func Get() *cli.App {
 			ProjectsCommand(),
 			EnvironmentsCommand(),
 			VariablesCommand(),
+			ClientsCommand(),
 		},
 		Action: func(c *cli.Context) error {
 
@@ -52,7 +53,7 @@ func Get() *cli.App {
 			}
 
 			client, _ := getAPIClient(cfg, nil)
-			if resp, err := client.GetV1ClientsSecretsWithResponse(c.Context); err != nil {
+			if resp, err := client.GetClientSecretsV1WithResponse(c.Context); err != nil {
 				return cli.Exit(fmt.Sprintf("unable to get secrets: %s", err.Error()), 1)
 			} else if resp.JSON200 == nil {
 				return cli.Exit(utils.GetAPIError(resp), 1)

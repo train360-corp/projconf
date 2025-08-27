@@ -5,13 +5,6 @@
  * commercial license.
  */
 
-/*
- * Use of this software is governed by the Business Source License
- * included in the LICENSE file. Production use is permitted, but
- * offering this software as a managed service requires a separate
- * commercial license.
- */
-
 package cli
 
 import (
@@ -24,37 +17,37 @@ import (
 	"strings"
 )
 
-func EnvironmentsCommand() *cli.Command {
+func ClientsCommand() *cli.Command {
 	return &cli.Command{
-		Name:        "environments",
-		Description: "manage environments in a ProjConf project",
+		Name:        "clients",
+		Description: "manage clients in a ProjConf environment",
 		Subcommands: []*cli.Command{
-			listEnvironmentsSubcommand(),
-			createEnvironmentSubcommand(),
+			listClientsSubcommand(),
+			createClientSubcommand(),
 		},
 	}
 }
 
-func listEnvironmentsSubcommand() *cli.Command {
+func listClientsSubcommand() *cli.Command {
 	sharedCfg, flags := config.GetClientFlags()
-	var projectIdStr string
+	var environmentIdStr string
 	return &cli.Command{
 		Name:        "ls",
-		Usage:       "list accessible environments",
-		Description: "list accessible environments",
+		Usage:       "list accessible clients",
+		Description: "list accessible clients",
 		Flags: append(flags,
 			&cli.StringFlag{
-				Name:        "project-id",
-				Usage:       "id of the project to return environments for",
-				Destination: &projectIdStr,
+				Name:        "environment-id",
+				Usage:       "id of the environment to create clients for",
+				Destination: &environmentIdStr,
 				Required:    true,
 			},
 		),
 		Action: func(c *cli.Context) error {
 
-			projectId, err := uuid.Parse(projectIdStr)
+			environmentId, err := uuid.Parse(environmentIdStr)
 			if err != nil {
-				return cli.Exit(fmt.Sprintf("\"%s\" is not a valid project id (UUIDv4)", projectIdStr), 1)
+				return cli.Exit(fmt.Sprintf("\"%s\" is not a valid environment id (UUIDv4)", environmentIdStr), 1)
 			}
 
 			cfg, err := config.Load()
@@ -63,17 +56,17 @@ func listEnvironmentsSubcommand() *cli.Command {
 			}
 
 			client, _ := getAPIClient(cfg, sharedCfg)
-			resp, err := client.GetEnvironmentsV1WithResponse(c.Context, projectId)
+			resp, err := client.GetClientsV1WithResponse(c.Context, environmentId)
 			if err != nil {
 				return cli.Exit(fmt.Sprintf("request failed: %v", err.Error()), 1)
 			}
 
 			if resp.JSON200 != nil {
 				if len(*resp.JSON200) == 0 {
-					fmt.Println("no environments found")
+					fmt.Println("no clients found")
 				}
-				for _, env := range *resp.JSON200 {
-					fmt.Println(fmt.Sprintf("%s: %s", env.Id, env.Display))
+				for _, client := range *resp.JSON200 {
+					fmt.Println(fmt.Sprintf("%s: %s", client.Id, client.Display))
 				}
 			} else {
 				return cli.Exit(utils.GetAPIError(resp), 1)
@@ -84,36 +77,36 @@ func listEnvironmentsSubcommand() *cli.Command {
 	}
 }
 
-func createEnvironmentSubcommand() *cli.Command {
+func createClientSubcommand() *cli.Command {
 
 	var name string
-	var projectIdStr string
+	var environmentIdStr string
 	sharedCfg, flags := config.GetClientFlags()
 
 	return &cli.Command{
 		Name:        "create",
-		Usage:       "create an environment",
-		Description: "create an environment",
+		Usage:       "create a client",
+		Description: "create a client",
 		Flags: append(flags,
 			&cli.StringFlag{
 				Name:        "name",
 				Aliases:     []string{"n"},
-				Usage:       "environment name",
+				Usage:       "client name",
 				Destination: &name,
 				Required:    true,
 			},
 			&cli.StringFlag{
-				Name:        "project-id",
-				Usage:       "id of the project to return environments for",
-				Destination: &projectIdStr,
+				Name:        "environment-id",
+				Usage:       "id of the environment to create clients for",
+				Destination: &environmentIdStr,
 				Required:    true,
 			},
 		),
 		Action: func(c *cli.Context) error {
 
-			projectId, err := uuid.Parse(projectIdStr)
+			environmentId, err := uuid.Parse(environmentIdStr)
 			if err != nil {
-				return cli.Exit(fmt.Sprintf("\"%s\" is not a valid project id (UUIDv4)", projectIdStr), 1)
+				return cli.Exit(fmt.Sprintf("\"%s\" is not a valid environment id (UUIDv4)", environmentIdStr), 1)
 			}
 
 			cfg, err := config.Load()
@@ -122,7 +115,7 @@ func createEnvironmentSubcommand() *cli.Command {
 			}
 
 			client, _ := getAPIClient(cfg, sharedCfg)
-			resp, err := client.CreateEnvironmentV1WithResponse(c.Context, projectId, api.CreateEnvironmentV1JSONRequestBody{
+			resp, err := client.CreateClientV1WithResponse(c.Context, environmentId, api.CreateClientV1JSONRequestBody{
 				Name: name,
 			})
 			if err != nil {
@@ -132,11 +125,9 @@ func createEnvironmentSubcommand() *cli.Command {
 			if resp.JSON201 != nil {
 				fmt.Println(fmt.Sprintf("\"%v\"", resp.JSON201.Id))
 			} else {
-
 				if strings.Index(string(resp.Body), "\"ERROR: duplicate key value violates unique constraint") != -1 {
 					return cli.Exit(fmt.Sprintf("project \"%s\" already exists", name), 1)
 				}
-
 				return cli.Exit(utils.GetAPIError(resp), 1)
 			}
 

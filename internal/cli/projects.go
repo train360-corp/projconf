@@ -58,7 +58,7 @@ func createProjectSubcommand() *cli.Command {
 			}
 
 			client, _ := getAPIClient(cfg, sharedCfg)
-			resp, err := client.PostV1ProjectsWithResponse(c.Context, api.PostV1ProjectsJSONRequestBody{
+			resp, err := client.CreateProjectV1WithResponse(c.Context, api.CreateProjectV1JSONRequestBody{
 				Name: name,
 			})
 			if err != nil {
@@ -98,7 +98,7 @@ func listProjectsSubcommand() *cli.Command {
 			}
 
 			client, _ := getAPIClient(cfg, sharedCfg)
-			resp, err := client.GetV1ProjectsWithResponse(c.Context)
+			resp, err := client.GetProjectsV1WithResponse(c.Context)
 			if err != nil {
 				return cli.Exit(fmt.Sprintf("request failed: %v", err.Error()), 1)
 			}

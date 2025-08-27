@@ -28,10 +28,33 @@ func GetServerInterface() api.ServerInterface {
 // RouteHandlers implements api.ServerInterface (generated).
 type RouteHandlers struct{}
 
-// PostV1ProjectsEnvironmentsEnvironmentIdClients create a new client
-func (s *RouteHandlers) PostV1ProjectsEnvironmentsEnvironmentIdClients(c *gin.Context, environmentId openapitypes.UUID) {
+func (s *RouteHandlers) GetClientsV1(c *gin.Context, environmentId openapitypes.UUID) {
+	sb := supabase.GetFromContext(c)
+	id, _ := uuid.Parse(environmentId.String())
+	if clients, err := sb.GetClients(&id); err != nil {
+		c.AbortWithStatusJSON(http.StatusForbidden, api.Error{
+			Error:       "unable to get clients",
+			Description: err.Error(),
+		})
+	} else {
+		envs := make([]api.ClientRepresentation, len(*clients))
+		for i, c := range *clients {
+			cId, _ := uuid.Parse(c.Id)
+			eId, _ := uuid.Parse(c.EnvironmentId)
+			envs[i] = api.ClientRepresentation{
+				Id:            cId,
+				Display:       c.Display,
+				CreatedAt:     c.CreatedAt,
+				EnvironmentId: eId,
+			}
+		}
+		c.JSON(http.StatusOK, envs)
+	}
+}
 
-	var req api.PostV1ProjectsEnvironmentsEnvironmentIdClientsJSONRequestBody
+func (s *RouteHandlers) CreateClientV1(c *gin.Context, environmentId openapitypes.UUID) {
+
+	var req api.CreateClientV1JSONRequestBody
 	c.BindJSON(&req)
 
 	sb := supabase.GetFromContext(c)
@@ -62,8 +85,7 @@ func (s *RouteHandlers) PostV1ProjectsEnvironmentsEnvironmentIdClients(c *gin.Co
 	return
 }
 
-// GetV1ClientsSecrets gets secrets as an authenticated client (will not work as admin)
-func (s *RouteHandlers) GetV1ClientsSecrets(c *gin.Context) {
+func (s *RouteHandlers) GetClientSecretsV1(c *gin.Context) {
 	sb := supabase.GetFromContext(c)
 
 	client, err := sb.GetSelf()
@@ -86,8 +108,7 @@ func (s *RouteHandlers) GetV1ClientsSecrets(c *gin.Context) {
 	c.JSON(http.StatusOK, secrets)
 }
 
-// GetV1ProjectsProjectIdVariables get variables in a project
-func (s *RouteHandlers) GetV1ProjectsProjectIdVariables(c *gin.Context, projectId openapitypes.UUID) {
+func (s *RouteHandlers) GetVariablesV1(c *gin.Context, projectId openapitypes.UUID) {
 	sb := supabase.GetFromContext(c)
 	id, _ := uuid.Parse(projectId.String())
 	if variables, err := sb.GetVariables(&id); err != nil {
@@ -113,9 +134,8 @@ func (s *RouteHandlers) GetV1ProjectsProjectIdVariables(c *gin.Context, projectI
 	}
 }
 
-// PostV1ProjectsProjectIdVariables create a variable in a project
-func (s *RouteHandlers) PostV1ProjectsProjectIdVariables(c *gin.Context, projectId openapitypes.UUID) {
-	var req api.PostV1ProjectsProjectIdVariablesJSONRequestBody
+func (s *RouteHandlers) CreateVariableV1(c *gin.Context, projectId openapitypes.UUID) {
+	var req api.CreateVariableV1JSONRequestBody
 	c.BindJSON(&req)
 
 	sb := supabase.GetFromContext(c)
@@ -166,8 +186,7 @@ func (s *RouteHandlers) PostV1ProjectsProjectIdVariables(c *gin.Context, project
 	}
 }
 
-// GetV1ProjectsProjectIdEnvironments get environments in a project
-func (s *RouteHandlers) GetV1ProjectsProjectIdEnvironments(c *gin.Context, projectId openapitypes.UUID) {
+func (s *RouteHandlers) GetEnvironmentsV1(c *gin.Context, projectId openapitypes.UUID) {
 	sb := supabase.GetFromContext(c)
 
 	id, _ := uuid.Parse(projectId.String())
@@ -188,23 +207,9 @@ func (s *RouteHandlers) GetV1ProjectsProjectIdEnvironments(c *gin.Context, proje
 	}
 }
 
-// GetV1Projects get projects
-func (s *RouteHandlers) GetV1Projects(c *gin.Context) {
-	sb := supabase.GetFromContext(c)
-	if projects, err := sb.GetProjects(); err != nil {
-		c.AbortWithStatusJSON(http.StatusForbidden, api.Error{
-			Error:       "unable to get projects",
-			Description: err.Error(),
-		})
-	} else {
-		c.JSON(http.StatusOK, projects)
-	}
-}
+func (s *RouteHandlers) CreateEnvironmentV1(c *gin.Context, projectId openapitypes.UUID) {
 
-// PostV1ProjectsProjectIdEnvironments create an environment in a project
-func (s *RouteHandlers) PostV1ProjectsProjectIdEnvironments(c *gin.Context, projectId openapitypes.UUID) {
-
-	var req api.PostV1ProjectsProjectIdEnvironmentsJSONRequestBody
+	var req api.CreateEnvironmentV1JSONRequestBody
 	c.BindJSON(&req)
 
 	sb := supabase.GetFromContext(c)
@@ -235,10 +240,21 @@ func (s *RouteHandlers) PostV1ProjectsProjectIdEnvironments(c *gin.Context, proj
 	}
 }
 
-// PostV1Projects create a project
-func (s *RouteHandlers) PostV1Projects(c *gin.Context) {
+func (s *RouteHandlers) GetProjectsV1(c *gin.Context) {
+	sb := supabase.GetFromContext(c)
+	if projects, err := sb.GetProjects(); err != nil {
+		c.AbortWithStatusJSON(http.StatusForbidden, api.Error{
+			Error:       "unable to get projects",
+			Description: err.Error(),
+		})
+	} else {
+		c.JSON(http.StatusOK, projects)
+	}
+}
 
-	var req api.PostV1ProjectsJSONRequestBody
+func (s *RouteHandlers) CreateProjectV1(c *gin.Context) {
+
+	var req api.CreateProjectV1JSONRequestBody
 	c.BindJSON(&req)
 
 	sb := supabase.GetFromContext(c)
@@ -292,8 +308,7 @@ func (s *RouteHandlers) GetV1ClientsSelf(c *gin.Context) {
 	}
 }
 
-// GetV1EnvironmentsEnvironmentIdSecrets get secrets based on environment (works with admin api client)
-func (s *RouteHandlers) GetV1EnvironmentsEnvironmentIdSecrets(
+func (s *RouteHandlers) GetEnvironmentSecretsV1(
 	c *gin.Context,
 	environmentId openapitypes.UUID,
 ) {

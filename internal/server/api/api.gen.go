@@ -167,6 +167,9 @@ type Variables = []Variable
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
 
+// ClientRepresentationResponse defines model for ClientRepresentationResponse.
+type ClientRepresentationResponse = ClientRepresentation
+
 // CreateClientResponse defines model for CreateClientResponse.
 type CreateClientResponse struct {
 	Id     openapi_types.UUID `json:"id"`
@@ -193,43 +196,43 @@ type CreateVariableRequestBody struct {
 	Key string `json:"key"`
 }
 
-// PostV1ProjectsJSONBody defines parameters for PostV1Projects.
-type PostV1ProjectsJSONBody struct {
+// CreateProjectV1JSONBody defines parameters for CreateProjectV1.
+type CreateProjectV1JSONBody struct {
 	// Name project name (must be unique)
 	Name string `json:"name"`
 }
 
-// PostV1ProjectsEnvironmentsEnvironmentIdClientsJSONBody defines parameters for PostV1ProjectsEnvironmentsEnvironmentIdClients.
-type PostV1ProjectsEnvironmentsEnvironmentIdClientsJSONBody struct {
+// CreateClientV1JSONBody defines parameters for CreateClientV1.
+type CreateClientV1JSONBody struct {
 	// Name client name
 	Name string `json:"name"`
 }
 
-// PostV1ProjectsProjectIdEnvironmentsJSONBody defines parameters for PostV1ProjectsProjectIdEnvironments.
-type PostV1ProjectsProjectIdEnvironmentsJSONBody struct {
+// CreateEnvironmentV1JSONBody defines parameters for CreateEnvironmentV1.
+type CreateEnvironmentV1JSONBody struct {
 	// Name project name (must be unique)
 	Name string `json:"name"`
 }
 
-// PostV1ProjectsProjectIdVariablesJSONBody defines parameters for PostV1ProjectsProjectIdVariables.
-type PostV1ProjectsProjectIdVariablesJSONBody struct {
+// CreateVariableV1JSONBody defines parameters for CreateVariableV1.
+type CreateVariableV1JSONBody struct {
 	Generator SecretGenerator `json:"generator"`
 
 	// Key the key in the environment
 	Key string `json:"key"`
 }
 
-// PostV1ProjectsJSONRequestBody defines body for PostV1Projects for application/json ContentType.
-type PostV1ProjectsJSONRequestBody PostV1ProjectsJSONBody
+// CreateProjectV1JSONRequestBody defines body for CreateProjectV1 for application/json ContentType.
+type CreateProjectV1JSONRequestBody CreateProjectV1JSONBody
 
-// PostV1ProjectsEnvironmentsEnvironmentIdClientsJSONRequestBody defines body for PostV1ProjectsEnvironmentsEnvironmentIdClients for application/json ContentType.
-type PostV1ProjectsEnvironmentsEnvironmentIdClientsJSONRequestBody PostV1ProjectsEnvironmentsEnvironmentIdClientsJSONBody
+// CreateClientV1JSONRequestBody defines body for CreateClientV1 for application/json ContentType.
+type CreateClientV1JSONRequestBody CreateClientV1JSONBody
 
-// PostV1ProjectsProjectIdEnvironmentsJSONRequestBody defines body for PostV1ProjectsProjectIdEnvironments for application/json ContentType.
-type PostV1ProjectsProjectIdEnvironmentsJSONRequestBody PostV1ProjectsProjectIdEnvironmentsJSONBody
+// CreateEnvironmentV1JSONRequestBody defines body for CreateEnvironmentV1 for application/json ContentType.
+type CreateEnvironmentV1JSONRequestBody CreateEnvironmentV1JSONBody
 
-// PostV1ProjectsProjectIdVariablesJSONRequestBody defines body for PostV1ProjectsProjectIdVariables for application/json ContentType.
-type PostV1ProjectsProjectIdVariablesJSONRequestBody PostV1ProjectsProjectIdVariablesJSONBody
+// CreateVariableV1JSONRequestBody defines body for CreateVariableV1 for application/json ContentType.
+type CreateVariableV1JSONRequestBody CreateVariableV1JSONBody
 
 // AsSecretGeneratorStatic returns the union data inside the SecretGenerator as a SecretGeneratorStatic
 func (t SecretGenerator) AsSecretGeneratorStatic() (SecretGeneratorStatic, error) {
@@ -539,40 +542,43 @@ type ClientInterface interface {
 	// GetV1ClientsSelf request
 	GetV1ClientsSelf(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetV1ClientsSecrets request
-	GetV1ClientsSecrets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetClientSecretsV1 request
+	GetClientSecretsV1(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetV1EnvironmentsEnvironmentIdSecrets request
-	GetV1EnvironmentsEnvironmentIdSecrets(ctx context.Context, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetEnvironmentSecretsV1 request
+	GetEnvironmentSecretsV1(ctx context.Context, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetV1Projects request
-	GetV1Projects(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetProjectsV1 request
+	GetProjectsV1(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PostV1ProjectsWithBody request with any body
-	PostV1ProjectsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateProjectV1WithBody request with any body
+	CreateProjectV1WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostV1Projects(ctx context.Context, body PostV1ProjectsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateProjectV1(ctx context.Context, body CreateProjectV1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PostV1ProjectsEnvironmentsEnvironmentIdClientsWithBody request with any body
-	PostV1ProjectsEnvironmentsEnvironmentIdClientsWithBody(ctx context.Context, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetClientsV1 request
+	GetClientsV1(ctx context.Context, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostV1ProjectsEnvironmentsEnvironmentIdClients(ctx context.Context, environmentId openapi_types.UUID, body PostV1ProjectsEnvironmentsEnvironmentIdClientsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateClientV1WithBody request with any body
+	CreateClientV1WithBody(ctx context.Context, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetV1ProjectsProjectIdEnvironments request
-	GetV1ProjectsProjectIdEnvironments(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateClientV1(ctx context.Context, environmentId openapi_types.UUID, body CreateClientV1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PostV1ProjectsProjectIdEnvironmentsWithBody request with any body
-	PostV1ProjectsProjectIdEnvironmentsWithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetEnvironmentsV1 request
+	GetEnvironmentsV1(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostV1ProjectsProjectIdEnvironments(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdEnvironmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateEnvironmentV1WithBody request with any body
+	CreateEnvironmentV1WithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetV1ProjectsProjectIdVariables request
-	GetV1ProjectsProjectIdVariables(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateEnvironmentV1(ctx context.Context, projectId openapi_types.UUID, body CreateEnvironmentV1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PostV1ProjectsProjectIdVariablesWithBody request with any body
-	PostV1ProjectsProjectIdVariablesWithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetVariablesV1 request
+	GetVariablesV1(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostV1ProjectsProjectIdVariables(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdVariablesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateVariableV1WithBody request with any body
+	CreateVariableV1WithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateVariableV1(ctx context.Context, projectId openapi_types.UUID, body CreateVariableV1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) GetV1AdminHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -599,8 +605,8 @@ func (c *Client) GetV1ClientsSelf(ctx context.Context, reqEditors ...RequestEdit
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetV1ClientsSecrets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetV1ClientsSecretsRequest(c.Server)
+func (c *Client) GetClientSecretsV1(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetClientSecretsV1Request(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -611,8 +617,8 @@ func (c *Client) GetV1ClientsSecrets(ctx context.Context, reqEditors ...RequestE
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetV1EnvironmentsEnvironmentIdSecrets(ctx context.Context, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetV1EnvironmentsEnvironmentIdSecretsRequest(c.Server, environmentId)
+func (c *Client) GetEnvironmentSecretsV1(ctx context.Context, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEnvironmentSecretsV1Request(c.Server, environmentId)
 	if err != nil {
 		return nil, err
 	}
@@ -623,8 +629,8 @@ func (c *Client) GetV1EnvironmentsEnvironmentIdSecrets(ctx context.Context, envi
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetV1Projects(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetV1ProjectsRequest(c.Server)
+func (c *Client) GetProjectsV1(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProjectsV1Request(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -635,8 +641,8 @@ func (c *Client) GetV1Projects(ctx context.Context, reqEditors ...RequestEditorF
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostV1ProjectsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostV1ProjectsRequestWithBody(c.Server, contentType, body)
+func (c *Client) CreateProjectV1WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateProjectV1RequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -647,8 +653,8 @@ func (c *Client) PostV1ProjectsWithBody(ctx context.Context, contentType string,
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostV1Projects(ctx context.Context, body PostV1ProjectsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostV1ProjectsRequest(c.Server, body)
+func (c *Client) CreateProjectV1(ctx context.Context, body CreateProjectV1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateProjectV1Request(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -659,8 +665,8 @@ func (c *Client) PostV1Projects(ctx context.Context, body PostV1ProjectsJSONRequ
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostV1ProjectsEnvironmentsEnvironmentIdClientsWithBody(ctx context.Context, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostV1ProjectsEnvironmentsEnvironmentIdClientsRequestWithBody(c.Server, environmentId, contentType, body)
+func (c *Client) GetClientsV1(ctx context.Context, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetClientsV1Request(c.Server, environmentId)
 	if err != nil {
 		return nil, err
 	}
@@ -671,8 +677,8 @@ func (c *Client) PostV1ProjectsEnvironmentsEnvironmentIdClientsWithBody(ctx cont
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostV1ProjectsEnvironmentsEnvironmentIdClients(ctx context.Context, environmentId openapi_types.UUID, body PostV1ProjectsEnvironmentsEnvironmentIdClientsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostV1ProjectsEnvironmentsEnvironmentIdClientsRequest(c.Server, environmentId, body)
+func (c *Client) CreateClientV1WithBody(ctx context.Context, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateClientV1RequestWithBody(c.Server, environmentId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -683,8 +689,8 @@ func (c *Client) PostV1ProjectsEnvironmentsEnvironmentIdClients(ctx context.Cont
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetV1ProjectsProjectIdEnvironments(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetV1ProjectsProjectIdEnvironmentsRequest(c.Server, projectId)
+func (c *Client) CreateClientV1(ctx context.Context, environmentId openapi_types.UUID, body CreateClientV1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateClientV1Request(c.Server, environmentId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -695,8 +701,8 @@ func (c *Client) GetV1ProjectsProjectIdEnvironments(ctx context.Context, project
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostV1ProjectsProjectIdEnvironmentsWithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostV1ProjectsProjectIdEnvironmentsRequestWithBody(c.Server, projectId, contentType, body)
+func (c *Client) GetEnvironmentsV1(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEnvironmentsV1Request(c.Server, projectId)
 	if err != nil {
 		return nil, err
 	}
@@ -707,8 +713,8 @@ func (c *Client) PostV1ProjectsProjectIdEnvironmentsWithBody(ctx context.Context
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostV1ProjectsProjectIdEnvironments(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdEnvironmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostV1ProjectsProjectIdEnvironmentsRequest(c.Server, projectId, body)
+func (c *Client) CreateEnvironmentV1WithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEnvironmentV1RequestWithBody(c.Server, projectId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -719,8 +725,8 @@ func (c *Client) PostV1ProjectsProjectIdEnvironments(ctx context.Context, projec
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetV1ProjectsProjectIdVariables(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetV1ProjectsProjectIdVariablesRequest(c.Server, projectId)
+func (c *Client) CreateEnvironmentV1(ctx context.Context, projectId openapi_types.UUID, body CreateEnvironmentV1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEnvironmentV1Request(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -731,8 +737,8 @@ func (c *Client) GetV1ProjectsProjectIdVariables(ctx context.Context, projectId 
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostV1ProjectsProjectIdVariablesWithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostV1ProjectsProjectIdVariablesRequestWithBody(c.Server, projectId, contentType, body)
+func (c *Client) GetVariablesV1(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetVariablesV1Request(c.Server, projectId)
 	if err != nil {
 		return nil, err
 	}
@@ -743,8 +749,20 @@ func (c *Client) PostV1ProjectsProjectIdVariablesWithBody(ctx context.Context, p
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostV1ProjectsProjectIdVariables(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdVariablesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostV1ProjectsProjectIdVariablesRequest(c.Server, projectId, body)
+func (c *Client) CreateVariableV1WithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateVariableV1RequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateVariableV1(ctx context.Context, projectId openapi_types.UUID, body CreateVariableV1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateVariableV1Request(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -809,8 +827,8 @@ func NewGetV1ClientsSelfRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewGetV1ClientsSecretsRequest generates requests for GetV1ClientsSecrets
-func NewGetV1ClientsSecretsRequest(server string) (*http.Request, error) {
+// NewGetClientSecretsV1Request generates requests for GetClientSecretsV1
+func NewGetClientSecretsV1Request(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -836,8 +854,8 @@ func NewGetV1ClientsSecretsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewGetV1EnvironmentsEnvironmentIdSecretsRequest generates requests for GetV1EnvironmentsEnvironmentIdSecrets
-func NewGetV1EnvironmentsEnvironmentIdSecretsRequest(server string, environmentId openapi_types.UUID) (*http.Request, error) {
+// NewGetEnvironmentSecretsV1Request generates requests for GetEnvironmentSecretsV1
+func NewGetEnvironmentSecretsV1Request(server string, environmentId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -870,8 +888,8 @@ func NewGetV1EnvironmentsEnvironmentIdSecretsRequest(server string, environmentI
 	return req, nil
 }
 
-// NewGetV1ProjectsRequest generates requests for GetV1Projects
-func NewGetV1ProjectsRequest(server string) (*http.Request, error) {
+// NewGetProjectsV1Request generates requests for GetProjectsV1
+func NewGetProjectsV1Request(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -897,19 +915,19 @@ func NewGetV1ProjectsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewPostV1ProjectsRequest calls the generic PostV1Projects builder with application/json body
-func NewPostV1ProjectsRequest(server string, body PostV1ProjectsJSONRequestBody) (*http.Request, error) {
+// NewCreateProjectV1Request calls the generic CreateProjectV1 builder with application/json body
+func NewCreateProjectV1Request(server string, body CreateProjectV1JSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostV1ProjectsRequestWithBody(server, "application/json", bodyReader)
+	return NewCreateProjectV1RequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewPostV1ProjectsRequestWithBody generates requests for PostV1Projects with any type of body
-func NewPostV1ProjectsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateProjectV1RequestWithBody generates requests for CreateProjectV1 with any type of body
+func NewCreateProjectV1RequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -937,19 +955,53 @@ func NewPostV1ProjectsRequestWithBody(server string, contentType string, body io
 	return req, nil
 }
 
-// NewPostV1ProjectsEnvironmentsEnvironmentIdClientsRequest calls the generic PostV1ProjectsEnvironmentsEnvironmentIdClients builder with application/json body
-func NewPostV1ProjectsEnvironmentsEnvironmentIdClientsRequest(server string, environmentId openapi_types.UUID, body PostV1ProjectsEnvironmentsEnvironmentIdClientsJSONRequestBody) (*http.Request, error) {
+// NewGetClientsV1Request generates requests for GetClientsV1
+func NewGetClientsV1Request(server string, environmentId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "environment_id", runtime.ParamLocationPath, environmentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/_/environments/%s/clients", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateClientV1Request calls the generic CreateClientV1 builder with application/json body
+func NewCreateClientV1Request(server string, environmentId openapi_types.UUID, body CreateClientV1JSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostV1ProjectsEnvironmentsEnvironmentIdClientsRequestWithBody(server, environmentId, "application/json", bodyReader)
+	return NewCreateClientV1RequestWithBody(server, environmentId, "application/json", bodyReader)
 }
 
-// NewPostV1ProjectsEnvironmentsEnvironmentIdClientsRequestWithBody generates requests for PostV1ProjectsEnvironmentsEnvironmentIdClients with any type of body
-func NewPostV1ProjectsEnvironmentsEnvironmentIdClientsRequestWithBody(server string, environmentId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateClientV1RequestWithBody generates requests for CreateClientV1 with any type of body
+func NewCreateClientV1RequestWithBody(server string, environmentId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -984,8 +1036,8 @@ func NewPostV1ProjectsEnvironmentsEnvironmentIdClientsRequestWithBody(server str
 	return req, nil
 }
 
-// NewGetV1ProjectsProjectIdEnvironmentsRequest generates requests for GetV1ProjectsProjectIdEnvironments
-func NewGetV1ProjectsProjectIdEnvironmentsRequest(server string, projectId openapi_types.UUID) (*http.Request, error) {
+// NewGetEnvironmentsV1Request generates requests for GetEnvironmentsV1
+func NewGetEnvironmentsV1Request(server string, projectId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1018,19 +1070,19 @@ func NewGetV1ProjectsProjectIdEnvironmentsRequest(server string, projectId opena
 	return req, nil
 }
 
-// NewPostV1ProjectsProjectIdEnvironmentsRequest calls the generic PostV1ProjectsProjectIdEnvironments builder with application/json body
-func NewPostV1ProjectsProjectIdEnvironmentsRequest(server string, projectId openapi_types.UUID, body PostV1ProjectsProjectIdEnvironmentsJSONRequestBody) (*http.Request, error) {
+// NewCreateEnvironmentV1Request calls the generic CreateEnvironmentV1 builder with application/json body
+func NewCreateEnvironmentV1Request(server string, projectId openapi_types.UUID, body CreateEnvironmentV1JSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostV1ProjectsProjectIdEnvironmentsRequestWithBody(server, projectId, "application/json", bodyReader)
+	return NewCreateEnvironmentV1RequestWithBody(server, projectId, "application/json", bodyReader)
 }
 
-// NewPostV1ProjectsProjectIdEnvironmentsRequestWithBody generates requests for PostV1ProjectsProjectIdEnvironments with any type of body
-func NewPostV1ProjectsProjectIdEnvironmentsRequestWithBody(server string, projectId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateEnvironmentV1RequestWithBody generates requests for CreateEnvironmentV1 with any type of body
+func NewCreateEnvironmentV1RequestWithBody(server string, projectId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1065,8 +1117,8 @@ func NewPostV1ProjectsProjectIdEnvironmentsRequestWithBody(server string, projec
 	return req, nil
 }
 
-// NewGetV1ProjectsProjectIdVariablesRequest generates requests for GetV1ProjectsProjectIdVariables
-func NewGetV1ProjectsProjectIdVariablesRequest(server string, projectId openapi_types.UUID) (*http.Request, error) {
+// NewGetVariablesV1Request generates requests for GetVariablesV1
+func NewGetVariablesV1Request(server string, projectId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1099,19 +1151,19 @@ func NewGetV1ProjectsProjectIdVariablesRequest(server string, projectId openapi_
 	return req, nil
 }
 
-// NewPostV1ProjectsProjectIdVariablesRequest calls the generic PostV1ProjectsProjectIdVariables builder with application/json body
-func NewPostV1ProjectsProjectIdVariablesRequest(server string, projectId openapi_types.UUID, body PostV1ProjectsProjectIdVariablesJSONRequestBody) (*http.Request, error) {
+// NewCreateVariableV1Request calls the generic CreateVariableV1 builder with application/json body
+func NewCreateVariableV1Request(server string, projectId openapi_types.UUID, body CreateVariableV1JSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostV1ProjectsProjectIdVariablesRequestWithBody(server, projectId, "application/json", bodyReader)
+	return NewCreateVariableV1RequestWithBody(server, projectId, "application/json", bodyReader)
 }
 
-// NewPostV1ProjectsProjectIdVariablesRequestWithBody generates requests for PostV1ProjectsProjectIdVariables with any type of body
-func NewPostV1ProjectsProjectIdVariablesRequestWithBody(server string, projectId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateVariableV1RequestWithBody generates requests for CreateVariableV1 with any type of body
+func NewCreateVariableV1RequestWithBody(server string, projectId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1195,53 +1247,53 @@ type ClientWithResponsesInterface interface {
 	// GetV1ClientsSelfWithResponse request
 	GetV1ClientsSelfWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetV1ClientsSelfResponse, error)
 
-	// GetV1ClientsSecretsWithResponse request
-	GetV1ClientsSecretsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetV1ClientsSecretsResponse, error)
+	// GetClientSecretsV1WithResponse request
+	GetClientSecretsV1WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetClientSecretsV1Response, error)
 
-	// GetV1EnvironmentsEnvironmentIdSecretsWithResponse request
-	GetV1EnvironmentsEnvironmentIdSecretsWithResponse(ctx context.Context, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetV1EnvironmentsEnvironmentIdSecretsResponse, error)
+	// GetEnvironmentSecretsV1WithResponse request
+	GetEnvironmentSecretsV1WithResponse(ctx context.Context, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetEnvironmentSecretsV1Response, error)
 
-	// GetV1ProjectsWithResponse request
-	GetV1ProjectsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetV1ProjectsResponse, error)
+	// GetProjectsV1WithResponse request
+	GetProjectsV1WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetProjectsV1Response, error)
 
-	// PostV1ProjectsWithBodyWithResponse request with any body
-	PostV1ProjectsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsResponse, error)
+	// CreateProjectV1WithBodyWithResponse request with any body
+	CreateProjectV1WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectV1Response, error)
 
-	PostV1ProjectsWithResponse(ctx context.Context, body PostV1ProjectsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsResponse, error)
+	CreateProjectV1WithResponse(ctx context.Context, body CreateProjectV1JSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectV1Response, error)
 
-	// PostV1ProjectsEnvironmentsEnvironmentIdClientsWithBodyWithResponse request with any body
-	PostV1ProjectsEnvironmentsEnvironmentIdClientsWithBodyWithResponse(ctx context.Context, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsEnvironmentsEnvironmentIdClientsResponse, error)
+	// GetClientsV1WithResponse request
+	GetClientsV1WithResponse(ctx context.Context, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetClientsV1Response, error)
 
-	PostV1ProjectsEnvironmentsEnvironmentIdClientsWithResponse(ctx context.Context, environmentId openapi_types.UUID, body PostV1ProjectsEnvironmentsEnvironmentIdClientsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsEnvironmentsEnvironmentIdClientsResponse, error)
+	// CreateClientV1WithBodyWithResponse request with any body
+	CreateClientV1WithBodyWithResponse(ctx context.Context, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateClientV1Response, error)
 
-	// GetV1ProjectsProjectIdEnvironmentsWithResponse request
-	GetV1ProjectsProjectIdEnvironmentsWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetV1ProjectsProjectIdEnvironmentsResponse, error)
+	CreateClientV1WithResponse(ctx context.Context, environmentId openapi_types.UUID, body CreateClientV1JSONRequestBody, reqEditors ...RequestEditorFn) (*CreateClientV1Response, error)
 
-	// PostV1ProjectsProjectIdEnvironmentsWithBodyWithResponse request with any body
-	PostV1ProjectsProjectIdEnvironmentsWithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdEnvironmentsResponse, error)
+	// GetEnvironmentsV1WithResponse request
+	GetEnvironmentsV1WithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetEnvironmentsV1Response, error)
 
-	PostV1ProjectsProjectIdEnvironmentsWithResponse(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdEnvironmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdEnvironmentsResponse, error)
+	// CreateEnvironmentV1WithBodyWithResponse request with any body
+	CreateEnvironmentV1WithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentV1Response, error)
 
-	// GetV1ProjectsProjectIdVariablesWithResponse request
-	GetV1ProjectsProjectIdVariablesWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetV1ProjectsProjectIdVariablesResponse, error)
+	CreateEnvironmentV1WithResponse(ctx context.Context, projectId openapi_types.UUID, body CreateEnvironmentV1JSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentV1Response, error)
 
-	// PostV1ProjectsProjectIdVariablesWithBodyWithResponse request with any body
-	PostV1ProjectsProjectIdVariablesWithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdVariablesResponse, error)
+	// GetVariablesV1WithResponse request
+	GetVariablesV1WithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetVariablesV1Response, error)
 
-	PostV1ProjectsProjectIdVariablesWithResponse(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdVariablesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdVariablesResponse, error)
+	// CreateVariableV1WithBodyWithResponse request with any body
+	CreateVariableV1WithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateVariableV1Response, error)
+
+	CreateVariableV1WithResponse(ctx context.Context, projectId openapi_types.UUID, body CreateVariableV1JSONRequestBody, reqEditors ...RequestEditorFn) (*CreateVariableV1Response, error)
 }
 
 type GetV1AdminHealthResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		Status    *string `json:"status,omitempty"`
-		Timestamp *string `json:"timestamp,omitempty"`
-	}
-	JSON400 *BadRequest
-	JSON401 *Unauthorized
-	JSON403 *Forbidden
-	JSON500 *InternalServerError
+	JSON200      *ClientRepresentationResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON500      *InternalServerError
 }
 
 // Status returns HTTPResponse.Status
@@ -1286,7 +1338,7 @@ func (r GetV1ClientsSelfResponse) StatusCode() int {
 	return 0
 }
 
-type GetV1ClientsSecretsResponse struct {
+type GetClientSecretsV1Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Secrets
@@ -1297,7 +1349,7 @@ type GetV1ClientsSecretsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetV1ClientsSecretsResponse) Status() string {
+func (r GetClientSecretsV1Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1305,14 +1357,14 @@ func (r GetV1ClientsSecretsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetV1ClientsSecretsResponse) StatusCode() int {
+func (r GetClientSecretsV1Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetV1EnvironmentsEnvironmentIdSecretsResponse struct {
+type GetEnvironmentSecretsV1Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Secrets
@@ -1323,7 +1375,7 @@ type GetV1EnvironmentsEnvironmentIdSecretsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetV1EnvironmentsEnvironmentIdSecretsResponse) Status() string {
+func (r GetEnvironmentSecretsV1Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1331,14 +1383,14 @@ func (r GetV1EnvironmentsEnvironmentIdSecretsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetV1EnvironmentsEnvironmentIdSecretsResponse) StatusCode() int {
+func (r GetEnvironmentSecretsV1Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetV1ProjectsResponse struct {
+type GetProjectsV1Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *[]struct {
@@ -1352,7 +1404,7 @@ type GetV1ProjectsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetV1ProjectsResponse) Status() string {
+func (r GetProjectsV1Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1360,14 +1412,14 @@ func (r GetV1ProjectsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetV1ProjectsResponse) StatusCode() int {
+func (r GetProjectsV1Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type PostV1ProjectsResponse struct {
+type CreateProjectV1Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *ID
@@ -1378,7 +1430,7 @@ type PostV1ProjectsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r PostV1ProjectsResponse) Status() string {
+func (r CreateProjectV1Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1386,14 +1438,40 @@ func (r PostV1ProjectsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r PostV1ProjectsResponse) StatusCode() int {
+func (r CreateProjectV1Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type PostV1ProjectsEnvironmentsEnvironmentIdClientsResponse struct {
+type GetClientsV1Response struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]ClientRepresentation
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetClientsV1Response) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetClientsV1Response) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateClientV1Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *CreateClientResponse
@@ -1404,7 +1482,7 @@ type PostV1ProjectsEnvironmentsEnvironmentIdClientsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r PostV1ProjectsEnvironmentsEnvironmentIdClientsResponse) Status() string {
+func (r CreateClientV1Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1412,14 +1490,14 @@ func (r PostV1ProjectsEnvironmentsEnvironmentIdClientsResponse) Status() string 
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r PostV1ProjectsEnvironmentsEnvironmentIdClientsResponse) StatusCode() int {
+func (r CreateClientV1Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetV1ProjectsProjectIdEnvironmentsResponse struct {
+type GetEnvironmentsV1Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Environments
@@ -1430,7 +1508,7 @@ type GetV1ProjectsProjectIdEnvironmentsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetV1ProjectsProjectIdEnvironmentsResponse) Status() string {
+func (r GetEnvironmentsV1Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1438,14 +1516,14 @@ func (r GetV1ProjectsProjectIdEnvironmentsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetV1ProjectsProjectIdEnvironmentsResponse) StatusCode() int {
+func (r GetEnvironmentsV1Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type PostV1ProjectsProjectIdEnvironmentsResponse struct {
+type CreateEnvironmentV1Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *ID
@@ -1456,7 +1534,7 @@ type PostV1ProjectsProjectIdEnvironmentsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r PostV1ProjectsProjectIdEnvironmentsResponse) Status() string {
+func (r CreateEnvironmentV1Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1464,14 +1542,14 @@ func (r PostV1ProjectsProjectIdEnvironmentsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r PostV1ProjectsProjectIdEnvironmentsResponse) StatusCode() int {
+func (r CreateEnvironmentV1Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetV1ProjectsProjectIdVariablesResponse struct {
+type GetVariablesV1Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Variables
@@ -1482,7 +1560,7 @@ type GetV1ProjectsProjectIdVariablesResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetV1ProjectsProjectIdVariablesResponse) Status() string {
+func (r GetVariablesV1Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1490,14 +1568,14 @@ func (r GetV1ProjectsProjectIdVariablesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetV1ProjectsProjectIdVariablesResponse) StatusCode() int {
+func (r GetVariablesV1Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type PostV1ProjectsProjectIdVariablesResponse struct {
+type CreateVariableV1Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *ID
@@ -1508,7 +1586,7 @@ type PostV1ProjectsProjectIdVariablesResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r PostV1ProjectsProjectIdVariablesResponse) Status() string {
+func (r CreateVariableV1Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1516,7 +1594,7 @@ func (r PostV1ProjectsProjectIdVariablesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r PostV1ProjectsProjectIdVariablesResponse) StatusCode() int {
+func (r CreateVariableV1Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1541,117 +1619,126 @@ func (c *ClientWithResponses) GetV1ClientsSelfWithResponse(ctx context.Context, 
 	return ParseGetV1ClientsSelfResponse(rsp)
 }
 
-// GetV1ClientsSecretsWithResponse request returning *GetV1ClientsSecretsResponse
-func (c *ClientWithResponses) GetV1ClientsSecretsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetV1ClientsSecretsResponse, error) {
-	rsp, err := c.GetV1ClientsSecrets(ctx, reqEditors...)
+// GetClientSecretsV1WithResponse request returning *GetClientSecretsV1Response
+func (c *ClientWithResponses) GetClientSecretsV1WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetClientSecretsV1Response, error) {
+	rsp, err := c.GetClientSecretsV1(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetV1ClientsSecretsResponse(rsp)
+	return ParseGetClientSecretsV1Response(rsp)
 }
 
-// GetV1EnvironmentsEnvironmentIdSecretsWithResponse request returning *GetV1EnvironmentsEnvironmentIdSecretsResponse
-func (c *ClientWithResponses) GetV1EnvironmentsEnvironmentIdSecretsWithResponse(ctx context.Context, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetV1EnvironmentsEnvironmentIdSecretsResponse, error) {
-	rsp, err := c.GetV1EnvironmentsEnvironmentIdSecrets(ctx, environmentId, reqEditors...)
+// GetEnvironmentSecretsV1WithResponse request returning *GetEnvironmentSecretsV1Response
+func (c *ClientWithResponses) GetEnvironmentSecretsV1WithResponse(ctx context.Context, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetEnvironmentSecretsV1Response, error) {
+	rsp, err := c.GetEnvironmentSecretsV1(ctx, environmentId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetV1EnvironmentsEnvironmentIdSecretsResponse(rsp)
+	return ParseGetEnvironmentSecretsV1Response(rsp)
 }
 
-// GetV1ProjectsWithResponse request returning *GetV1ProjectsResponse
-func (c *ClientWithResponses) GetV1ProjectsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetV1ProjectsResponse, error) {
-	rsp, err := c.GetV1Projects(ctx, reqEditors...)
+// GetProjectsV1WithResponse request returning *GetProjectsV1Response
+func (c *ClientWithResponses) GetProjectsV1WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetProjectsV1Response, error) {
+	rsp, err := c.GetProjectsV1(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetV1ProjectsResponse(rsp)
+	return ParseGetProjectsV1Response(rsp)
 }
 
-// PostV1ProjectsWithBodyWithResponse request with arbitrary body returning *PostV1ProjectsResponse
-func (c *ClientWithResponses) PostV1ProjectsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsResponse, error) {
-	rsp, err := c.PostV1ProjectsWithBody(ctx, contentType, body, reqEditors...)
+// CreateProjectV1WithBodyWithResponse request with arbitrary body returning *CreateProjectV1Response
+func (c *ClientWithResponses) CreateProjectV1WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectV1Response, error) {
+	rsp, err := c.CreateProjectV1WithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostV1ProjectsResponse(rsp)
+	return ParseCreateProjectV1Response(rsp)
 }
 
-func (c *ClientWithResponses) PostV1ProjectsWithResponse(ctx context.Context, body PostV1ProjectsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsResponse, error) {
-	rsp, err := c.PostV1Projects(ctx, body, reqEditors...)
+func (c *ClientWithResponses) CreateProjectV1WithResponse(ctx context.Context, body CreateProjectV1JSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectV1Response, error) {
+	rsp, err := c.CreateProjectV1(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostV1ProjectsResponse(rsp)
+	return ParseCreateProjectV1Response(rsp)
 }
 
-// PostV1ProjectsEnvironmentsEnvironmentIdClientsWithBodyWithResponse request with arbitrary body returning *PostV1ProjectsEnvironmentsEnvironmentIdClientsResponse
-func (c *ClientWithResponses) PostV1ProjectsEnvironmentsEnvironmentIdClientsWithBodyWithResponse(ctx context.Context, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsEnvironmentsEnvironmentIdClientsResponse, error) {
-	rsp, err := c.PostV1ProjectsEnvironmentsEnvironmentIdClientsWithBody(ctx, environmentId, contentType, body, reqEditors...)
+// GetClientsV1WithResponse request returning *GetClientsV1Response
+func (c *ClientWithResponses) GetClientsV1WithResponse(ctx context.Context, environmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetClientsV1Response, error) {
+	rsp, err := c.GetClientsV1(ctx, environmentId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostV1ProjectsEnvironmentsEnvironmentIdClientsResponse(rsp)
+	return ParseGetClientsV1Response(rsp)
 }
 
-func (c *ClientWithResponses) PostV1ProjectsEnvironmentsEnvironmentIdClientsWithResponse(ctx context.Context, environmentId openapi_types.UUID, body PostV1ProjectsEnvironmentsEnvironmentIdClientsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsEnvironmentsEnvironmentIdClientsResponse, error) {
-	rsp, err := c.PostV1ProjectsEnvironmentsEnvironmentIdClients(ctx, environmentId, body, reqEditors...)
+// CreateClientV1WithBodyWithResponse request with arbitrary body returning *CreateClientV1Response
+func (c *ClientWithResponses) CreateClientV1WithBodyWithResponse(ctx context.Context, environmentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateClientV1Response, error) {
+	rsp, err := c.CreateClientV1WithBody(ctx, environmentId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostV1ProjectsEnvironmentsEnvironmentIdClientsResponse(rsp)
+	return ParseCreateClientV1Response(rsp)
 }
 
-// GetV1ProjectsProjectIdEnvironmentsWithResponse request returning *GetV1ProjectsProjectIdEnvironmentsResponse
-func (c *ClientWithResponses) GetV1ProjectsProjectIdEnvironmentsWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetV1ProjectsProjectIdEnvironmentsResponse, error) {
-	rsp, err := c.GetV1ProjectsProjectIdEnvironments(ctx, projectId, reqEditors...)
+func (c *ClientWithResponses) CreateClientV1WithResponse(ctx context.Context, environmentId openapi_types.UUID, body CreateClientV1JSONRequestBody, reqEditors ...RequestEditorFn) (*CreateClientV1Response, error) {
+	rsp, err := c.CreateClientV1(ctx, environmentId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetV1ProjectsProjectIdEnvironmentsResponse(rsp)
+	return ParseCreateClientV1Response(rsp)
 }
 
-// PostV1ProjectsProjectIdEnvironmentsWithBodyWithResponse request with arbitrary body returning *PostV1ProjectsProjectIdEnvironmentsResponse
-func (c *ClientWithResponses) PostV1ProjectsProjectIdEnvironmentsWithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdEnvironmentsResponse, error) {
-	rsp, err := c.PostV1ProjectsProjectIdEnvironmentsWithBody(ctx, projectId, contentType, body, reqEditors...)
+// GetEnvironmentsV1WithResponse request returning *GetEnvironmentsV1Response
+func (c *ClientWithResponses) GetEnvironmentsV1WithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetEnvironmentsV1Response, error) {
+	rsp, err := c.GetEnvironmentsV1(ctx, projectId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostV1ProjectsProjectIdEnvironmentsResponse(rsp)
+	return ParseGetEnvironmentsV1Response(rsp)
 }
 
-func (c *ClientWithResponses) PostV1ProjectsProjectIdEnvironmentsWithResponse(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdEnvironmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdEnvironmentsResponse, error) {
-	rsp, err := c.PostV1ProjectsProjectIdEnvironments(ctx, projectId, body, reqEditors...)
+// CreateEnvironmentV1WithBodyWithResponse request with arbitrary body returning *CreateEnvironmentV1Response
+func (c *ClientWithResponses) CreateEnvironmentV1WithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEnvironmentV1Response, error) {
+	rsp, err := c.CreateEnvironmentV1WithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostV1ProjectsProjectIdEnvironmentsResponse(rsp)
+	return ParseCreateEnvironmentV1Response(rsp)
 }
 
-// GetV1ProjectsProjectIdVariablesWithResponse request returning *GetV1ProjectsProjectIdVariablesResponse
-func (c *ClientWithResponses) GetV1ProjectsProjectIdVariablesWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetV1ProjectsProjectIdVariablesResponse, error) {
-	rsp, err := c.GetV1ProjectsProjectIdVariables(ctx, projectId, reqEditors...)
+func (c *ClientWithResponses) CreateEnvironmentV1WithResponse(ctx context.Context, projectId openapi_types.UUID, body CreateEnvironmentV1JSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEnvironmentV1Response, error) {
+	rsp, err := c.CreateEnvironmentV1(ctx, projectId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetV1ProjectsProjectIdVariablesResponse(rsp)
+	return ParseCreateEnvironmentV1Response(rsp)
 }
 
-// PostV1ProjectsProjectIdVariablesWithBodyWithResponse request with arbitrary body returning *PostV1ProjectsProjectIdVariablesResponse
-func (c *ClientWithResponses) PostV1ProjectsProjectIdVariablesWithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdVariablesResponse, error) {
-	rsp, err := c.PostV1ProjectsProjectIdVariablesWithBody(ctx, projectId, contentType, body, reqEditors...)
+// GetVariablesV1WithResponse request returning *GetVariablesV1Response
+func (c *ClientWithResponses) GetVariablesV1WithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetVariablesV1Response, error) {
+	rsp, err := c.GetVariablesV1(ctx, projectId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostV1ProjectsProjectIdVariablesResponse(rsp)
+	return ParseGetVariablesV1Response(rsp)
 }
 
-func (c *ClientWithResponses) PostV1ProjectsProjectIdVariablesWithResponse(ctx context.Context, projectId openapi_types.UUID, body PostV1ProjectsProjectIdVariablesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ProjectsProjectIdVariablesResponse, error) {
-	rsp, err := c.PostV1ProjectsProjectIdVariables(ctx, projectId, body, reqEditors...)
+// CreateVariableV1WithBodyWithResponse request with arbitrary body returning *CreateVariableV1Response
+func (c *ClientWithResponses) CreateVariableV1WithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateVariableV1Response, error) {
+	rsp, err := c.CreateVariableV1WithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostV1ProjectsProjectIdVariablesResponse(rsp)
+	return ParseCreateVariableV1Response(rsp)
+}
+
+func (c *ClientWithResponses) CreateVariableV1WithResponse(ctx context.Context, projectId openapi_types.UUID, body CreateVariableV1JSONRequestBody, reqEditors ...RequestEditorFn) (*CreateVariableV1Response, error) {
+	rsp, err := c.CreateVariableV1(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateVariableV1Response(rsp)
 }
 
 // ParseGetV1AdminHealthResponse parses an HTTP response from a GetV1AdminHealthWithResponse call
@@ -1669,10 +1756,7 @@ func ParseGetV1AdminHealthResponse(rsp *http.Response) (*GetV1AdminHealthRespons
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Status    *string `json:"status,omitempty"`
-			Timestamp *string `json:"timestamp,omitempty"`
-		}
+		var dest ClientRepresentationResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -1765,15 +1849,15 @@ func ParseGetV1ClientsSelfResponse(rsp *http.Response) (*GetV1ClientsSelfRespons
 	return response, nil
 }
 
-// ParseGetV1ClientsSecretsResponse parses an HTTP response from a GetV1ClientsSecretsWithResponse call
-func ParseGetV1ClientsSecretsResponse(rsp *http.Response) (*GetV1ClientsSecretsResponse, error) {
+// ParseGetClientSecretsV1Response parses an HTTP response from a GetClientSecretsV1WithResponse call
+func ParseGetClientSecretsV1Response(rsp *http.Response) (*GetClientSecretsV1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetV1ClientsSecretsResponse{
+	response := &GetClientSecretsV1Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -1819,15 +1903,15 @@ func ParseGetV1ClientsSecretsResponse(rsp *http.Response) (*GetV1ClientsSecretsR
 	return response, nil
 }
 
-// ParseGetV1EnvironmentsEnvironmentIdSecretsResponse parses an HTTP response from a GetV1EnvironmentsEnvironmentIdSecretsWithResponse call
-func ParseGetV1EnvironmentsEnvironmentIdSecretsResponse(rsp *http.Response) (*GetV1EnvironmentsEnvironmentIdSecretsResponse, error) {
+// ParseGetEnvironmentSecretsV1Response parses an HTTP response from a GetEnvironmentSecretsV1WithResponse call
+func ParseGetEnvironmentSecretsV1Response(rsp *http.Response) (*GetEnvironmentSecretsV1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetV1EnvironmentsEnvironmentIdSecretsResponse{
+	response := &GetEnvironmentSecretsV1Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -1873,15 +1957,15 @@ func ParseGetV1EnvironmentsEnvironmentIdSecretsResponse(rsp *http.Response) (*Ge
 	return response, nil
 }
 
-// ParseGetV1ProjectsResponse parses an HTTP response from a GetV1ProjectsWithResponse call
-func ParseGetV1ProjectsResponse(rsp *http.Response) (*GetV1ProjectsResponse, error) {
+// ParseGetProjectsV1Response parses an HTTP response from a GetProjectsV1WithResponse call
+func ParseGetProjectsV1Response(rsp *http.Response) (*GetProjectsV1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetV1ProjectsResponse{
+	response := &GetProjectsV1Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -1930,15 +2014,15 @@ func ParseGetV1ProjectsResponse(rsp *http.Response) (*GetV1ProjectsResponse, err
 	return response, nil
 }
 
-// ParsePostV1ProjectsResponse parses an HTTP response from a PostV1ProjectsWithResponse call
-func ParsePostV1ProjectsResponse(rsp *http.Response) (*PostV1ProjectsResponse, error) {
+// ParseCreateProjectV1Response parses an HTTP response from a CreateProjectV1WithResponse call
+func ParseCreateProjectV1Response(rsp *http.Response) (*CreateProjectV1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PostV1ProjectsResponse{
+	response := &CreateProjectV1Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -1984,15 +2068,69 @@ func ParsePostV1ProjectsResponse(rsp *http.Response) (*PostV1ProjectsResponse, e
 	return response, nil
 }
 
-// ParsePostV1ProjectsEnvironmentsEnvironmentIdClientsResponse parses an HTTP response from a PostV1ProjectsEnvironmentsEnvironmentIdClientsWithResponse call
-func ParsePostV1ProjectsEnvironmentsEnvironmentIdClientsResponse(rsp *http.Response) (*PostV1ProjectsEnvironmentsEnvironmentIdClientsResponse, error) {
+// ParseGetClientsV1Response parses an HTTP response from a GetClientsV1WithResponse call
+func ParseGetClientsV1Response(rsp *http.Response) (*GetClientsV1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PostV1ProjectsEnvironmentsEnvironmentIdClientsResponse{
+	response := &GetClientsV1Response{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []ClientRepresentation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateClientV1Response parses an HTTP response from a CreateClientV1WithResponse call
+func ParseCreateClientV1Response(rsp *http.Response) (*CreateClientV1Response, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateClientV1Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -2038,15 +2176,15 @@ func ParsePostV1ProjectsEnvironmentsEnvironmentIdClientsResponse(rsp *http.Respo
 	return response, nil
 }
 
-// ParseGetV1ProjectsProjectIdEnvironmentsResponse parses an HTTP response from a GetV1ProjectsProjectIdEnvironmentsWithResponse call
-func ParseGetV1ProjectsProjectIdEnvironmentsResponse(rsp *http.Response) (*GetV1ProjectsProjectIdEnvironmentsResponse, error) {
+// ParseGetEnvironmentsV1Response parses an HTTP response from a GetEnvironmentsV1WithResponse call
+func ParseGetEnvironmentsV1Response(rsp *http.Response) (*GetEnvironmentsV1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetV1ProjectsProjectIdEnvironmentsResponse{
+	response := &GetEnvironmentsV1Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -2092,15 +2230,15 @@ func ParseGetV1ProjectsProjectIdEnvironmentsResponse(rsp *http.Response) (*GetV1
 	return response, nil
 }
 
-// ParsePostV1ProjectsProjectIdEnvironmentsResponse parses an HTTP response from a PostV1ProjectsProjectIdEnvironmentsWithResponse call
-func ParsePostV1ProjectsProjectIdEnvironmentsResponse(rsp *http.Response) (*PostV1ProjectsProjectIdEnvironmentsResponse, error) {
+// ParseCreateEnvironmentV1Response parses an HTTP response from a CreateEnvironmentV1WithResponse call
+func ParseCreateEnvironmentV1Response(rsp *http.Response) (*CreateEnvironmentV1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PostV1ProjectsProjectIdEnvironmentsResponse{
+	response := &CreateEnvironmentV1Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -2146,15 +2284,15 @@ func ParsePostV1ProjectsProjectIdEnvironmentsResponse(rsp *http.Response) (*Post
 	return response, nil
 }
 
-// ParseGetV1ProjectsProjectIdVariablesResponse parses an HTTP response from a GetV1ProjectsProjectIdVariablesWithResponse call
-func ParseGetV1ProjectsProjectIdVariablesResponse(rsp *http.Response) (*GetV1ProjectsProjectIdVariablesResponse, error) {
+// ParseGetVariablesV1Response parses an HTTP response from a GetVariablesV1WithResponse call
+func ParseGetVariablesV1Response(rsp *http.Response) (*GetVariablesV1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetV1ProjectsProjectIdVariablesResponse{
+	response := &GetVariablesV1Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -2200,15 +2338,15 @@ func ParseGetV1ProjectsProjectIdVariablesResponse(rsp *http.Response) (*GetV1Pro
 	return response, nil
 }
 
-// ParsePostV1ProjectsProjectIdVariablesResponse parses an HTTP response from a PostV1ProjectsProjectIdVariablesWithResponse call
-func ParsePostV1ProjectsProjectIdVariablesResponse(rsp *http.Response) (*PostV1ProjectsProjectIdVariablesResponse, error) {
+// ParseCreateVariableV1Response parses an HTTP response from a CreateVariableV1WithResponse call
+func ParseCreateVariableV1Response(rsp *http.Response) (*CreateVariableV1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PostV1ProjectsProjectIdVariablesResponse{
+	response := &CreateVariableV1Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -2264,31 +2402,34 @@ type ServerInterface interface {
 	GetV1ClientsSelf(c *gin.Context)
 	// Get secrets
 	// (GET /v1/clients/secrets)
-	GetV1ClientsSecrets(c *gin.Context)
+	GetClientSecretsV1(c *gin.Context)
 	// List secrets
 	// (GET /v1/environments/{environment_id}/secrets)
-	GetV1EnvironmentsEnvironmentIdSecrets(c *gin.Context, environmentId openapi_types.UUID)
+	GetEnvironmentSecretsV1(c *gin.Context, environmentId openapi_types.UUID)
 	// List projects
 	// (GET /v1/projects)
-	GetV1Projects(c *gin.Context)
+	GetProjectsV1(c *gin.Context)
 	// Create project
 	// (POST /v1/projects)
-	PostV1Projects(c *gin.Context)
+	CreateProjectV1(c *gin.Context)
+	// Get client
+	// (GET /v1/projects/_/environments/{environment_id}/clients)
+	GetClientsV1(c *gin.Context, environmentId openapi_types.UUID)
 	// Create client
 	// (POST /v1/projects/_/environments/{environment_id}/clients)
-	PostV1ProjectsEnvironmentsEnvironmentIdClients(c *gin.Context, environmentId openapi_types.UUID)
+	CreateClientV1(c *gin.Context, environmentId openapi_types.UUID)
 	// List environments
 	// (GET /v1/projects/{project_id}/environments)
-	GetV1ProjectsProjectIdEnvironments(c *gin.Context, projectId openapi_types.UUID)
+	GetEnvironmentsV1(c *gin.Context, projectId openapi_types.UUID)
 	// Create environment
 	// (POST /v1/projects/{project_id}/environments)
-	PostV1ProjectsProjectIdEnvironments(c *gin.Context, projectId openapi_types.UUID)
+	CreateEnvironmentV1(c *gin.Context, projectId openapi_types.UUID)
 	// Get varibales
 	// (GET /v1/projects/{project_id}/variables)
-	GetV1ProjectsProjectIdVariables(c *gin.Context, projectId openapi_types.UUID)
+	GetVariablesV1(c *gin.Context, projectId openapi_types.UUID)
 	// Create variable
 	// (POST /v1/projects/{project_id}/variables)
-	PostV1ProjectsProjectIdVariables(c *gin.Context, projectId openapi_types.UUID)
+	CreateVariableV1(c *gin.Context, projectId openapi_types.UUID)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -2326,8 +2467,8 @@ func (siw *ServerInterfaceWrapper) GetV1ClientsSelf(c *gin.Context) {
 	siw.Handler.GetV1ClientsSelf(c)
 }
 
-// GetV1ClientsSecrets operation middleware
-func (siw *ServerInterfaceWrapper) GetV1ClientsSecrets(c *gin.Context) {
+// GetClientSecretsV1 operation middleware
+func (siw *ServerInterfaceWrapper) GetClientSecretsV1(c *gin.Context) {
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -2336,11 +2477,11 @@ func (siw *ServerInterfaceWrapper) GetV1ClientsSecrets(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetV1ClientsSecrets(c)
+	siw.Handler.GetClientSecretsV1(c)
 }
 
-// GetV1EnvironmentsEnvironmentIdSecrets operation middleware
-func (siw *ServerInterfaceWrapper) GetV1EnvironmentsEnvironmentIdSecrets(c *gin.Context) {
+// GetEnvironmentSecretsV1 operation middleware
+func (siw *ServerInterfaceWrapper) GetEnvironmentSecretsV1(c *gin.Context) {
 
 	var err error
 
@@ -2360,11 +2501,11 @@ func (siw *ServerInterfaceWrapper) GetV1EnvironmentsEnvironmentIdSecrets(c *gin.
 		}
 	}
 
-	siw.Handler.GetV1EnvironmentsEnvironmentIdSecrets(c, environmentId)
+	siw.Handler.GetEnvironmentSecretsV1(c, environmentId)
 }
 
-// GetV1Projects operation middleware
-func (siw *ServerInterfaceWrapper) GetV1Projects(c *gin.Context) {
+// GetProjectsV1 operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectsV1(c *gin.Context) {
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -2373,11 +2514,11 @@ func (siw *ServerInterfaceWrapper) GetV1Projects(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetV1Projects(c)
+	siw.Handler.GetProjectsV1(c)
 }
 
-// PostV1Projects operation middleware
-func (siw *ServerInterfaceWrapper) PostV1Projects(c *gin.Context) {
+// CreateProjectV1 operation middleware
+func (siw *ServerInterfaceWrapper) CreateProjectV1(c *gin.Context) {
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -2386,11 +2527,11 @@ func (siw *ServerInterfaceWrapper) PostV1Projects(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.PostV1Projects(c)
+	siw.Handler.CreateProjectV1(c)
 }
 
-// PostV1ProjectsEnvironmentsEnvironmentIdClients operation middleware
-func (siw *ServerInterfaceWrapper) PostV1ProjectsEnvironmentsEnvironmentIdClients(c *gin.Context) {
+// GetClientsV1 operation middleware
+func (siw *ServerInterfaceWrapper) GetClientsV1(c *gin.Context) {
 
 	var err error
 
@@ -2410,11 +2551,35 @@ func (siw *ServerInterfaceWrapper) PostV1ProjectsEnvironmentsEnvironmentIdClient
 		}
 	}
 
-	siw.Handler.PostV1ProjectsEnvironmentsEnvironmentIdClients(c, environmentId)
+	siw.Handler.GetClientsV1(c, environmentId)
 }
 
-// GetV1ProjectsProjectIdEnvironments operation middleware
-func (siw *ServerInterfaceWrapper) GetV1ProjectsProjectIdEnvironments(c *gin.Context) {
+// CreateClientV1 operation middleware
+func (siw *ServerInterfaceWrapper) CreateClientV1(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "environment_id" -------------
+	var environmentId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "environment_id", c.Param("environment_id"), &environmentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter environment_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateClientV1(c, environmentId)
+}
+
+// GetEnvironmentsV1 operation middleware
+func (siw *ServerInterfaceWrapper) GetEnvironmentsV1(c *gin.Context) {
 
 	var err error
 
@@ -2434,11 +2599,11 @@ func (siw *ServerInterfaceWrapper) GetV1ProjectsProjectIdEnvironments(c *gin.Con
 		}
 	}
 
-	siw.Handler.GetV1ProjectsProjectIdEnvironments(c, projectId)
+	siw.Handler.GetEnvironmentsV1(c, projectId)
 }
 
-// PostV1ProjectsProjectIdEnvironments operation middleware
-func (siw *ServerInterfaceWrapper) PostV1ProjectsProjectIdEnvironments(c *gin.Context) {
+// CreateEnvironmentV1 operation middleware
+func (siw *ServerInterfaceWrapper) CreateEnvironmentV1(c *gin.Context) {
 
 	var err error
 
@@ -2458,11 +2623,11 @@ func (siw *ServerInterfaceWrapper) PostV1ProjectsProjectIdEnvironments(c *gin.Co
 		}
 	}
 
-	siw.Handler.PostV1ProjectsProjectIdEnvironments(c, projectId)
+	siw.Handler.CreateEnvironmentV1(c, projectId)
 }
 
-// GetV1ProjectsProjectIdVariables operation middleware
-func (siw *ServerInterfaceWrapper) GetV1ProjectsProjectIdVariables(c *gin.Context) {
+// GetVariablesV1 operation middleware
+func (siw *ServerInterfaceWrapper) GetVariablesV1(c *gin.Context) {
 
 	var err error
 
@@ -2482,11 +2647,11 @@ func (siw *ServerInterfaceWrapper) GetV1ProjectsProjectIdVariables(c *gin.Contex
 		}
 	}
 
-	siw.Handler.GetV1ProjectsProjectIdVariables(c, projectId)
+	siw.Handler.GetVariablesV1(c, projectId)
 }
 
-// PostV1ProjectsProjectIdVariables operation middleware
-func (siw *ServerInterfaceWrapper) PostV1ProjectsProjectIdVariables(c *gin.Context) {
+// CreateVariableV1 operation middleware
+func (siw *ServerInterfaceWrapper) CreateVariableV1(c *gin.Context) {
 
 	var err error
 
@@ -2506,7 +2671,7 @@ func (siw *ServerInterfaceWrapper) PostV1ProjectsProjectIdVariables(c *gin.Conte
 		}
 	}
 
-	siw.Handler.PostV1ProjectsProjectIdVariables(c, projectId)
+	siw.Handler.CreateVariableV1(c, projectId)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -2538,13 +2703,14 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 
 	router.GET(options.BaseURL+"/v1/admin/health", wrapper.GetV1AdminHealth)
 	router.GET(options.BaseURL+"/v1/clients/_self", wrapper.GetV1ClientsSelf)
-	router.GET(options.BaseURL+"/v1/clients/secrets", wrapper.GetV1ClientsSecrets)
-	router.GET(options.BaseURL+"/v1/environments/:environment_id/secrets", wrapper.GetV1EnvironmentsEnvironmentIdSecrets)
-	router.GET(options.BaseURL+"/v1/projects", wrapper.GetV1Projects)
-	router.POST(options.BaseURL+"/v1/projects", wrapper.PostV1Projects)
-	router.POST(options.BaseURL+"/v1/projects/_/environments/:environment_id/clients", wrapper.PostV1ProjectsEnvironmentsEnvironmentIdClients)
-	router.GET(options.BaseURL+"/v1/projects/:project_id/environments", wrapper.GetV1ProjectsProjectIdEnvironments)
-	router.POST(options.BaseURL+"/v1/projects/:project_id/environments", wrapper.PostV1ProjectsProjectIdEnvironments)
-	router.GET(options.BaseURL+"/v1/projects/:project_id/variables", wrapper.GetV1ProjectsProjectIdVariables)
-	router.POST(options.BaseURL+"/v1/projects/:project_id/variables", wrapper.PostV1ProjectsProjectIdVariables)
+	router.GET(options.BaseURL+"/v1/clients/secrets", wrapper.GetClientSecretsV1)
+	router.GET(options.BaseURL+"/v1/environments/:environment_id/secrets", wrapper.GetEnvironmentSecretsV1)
+	router.GET(options.BaseURL+"/v1/projects", wrapper.GetProjectsV1)
+	router.POST(options.BaseURL+"/v1/projects", wrapper.CreateProjectV1)
+	router.GET(options.BaseURL+"/v1/projects/_/environments/:environment_id/clients", wrapper.GetClientsV1)
+	router.POST(options.BaseURL+"/v1/projects/_/environments/:environment_id/clients", wrapper.CreateClientV1)
+	router.GET(options.BaseURL+"/v1/projects/:project_id/environments", wrapper.GetEnvironmentsV1)
+	router.POST(options.BaseURL+"/v1/projects/:project_id/environments", wrapper.CreateEnvironmentV1)
+	router.GET(options.BaseURL+"/v1/projects/:project_id/variables", wrapper.GetVariablesV1)
+	router.POST(options.BaseURL+"/v1/projects/:project_id/variables", wrapper.CreateVariableV1)
 }

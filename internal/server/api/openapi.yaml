@@ -15,17 +15,7 @@ paths:
       summary: Get health
       description: Returns a health-check on the server
       responses:
-        '200':
-          description: client object
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  timestamp:
-                    type: string
+        '200': { $ref: '#/components/responses/ClientRepresentationResponse' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -51,6 +41,7 @@ paths:
 
   /v1/clients/secrets:
     get:
+      operationId: getClientSecretsV1
       tags:
         - client
       summary: Get secrets
@@ -69,6 +60,7 @@ paths:
 
   /v1/projects:
     get:
+      operationId: getProjectsV1
       tags:
         - client
         - admin
@@ -96,6 +88,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
     post:
+      operationId: createProjectV1
       tags:
         - admin
       summary: Create project
@@ -128,6 +121,7 @@ paths:
 
   /v1/projects/{project_id}/environments:
     get:
+      operationId: getEnvironmentsV1
       tags:
         - client
         - admin
@@ -153,6 +147,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
     post:
+      operationId: createEnvironmentV1
       tags:
         - admin
       summary: Create environment
@@ -193,6 +188,7 @@ paths:
 
   /v1/projects/{project_id}/variables:
     get:
+      operationId: getVariablesV1
       tags:
         - client
         - admin
@@ -218,6 +214,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
     post:
+      operationId: createVariableV1
       tags:
         - admin
       summary: Create variable
@@ -245,7 +242,35 @@ paths:
         '500': { $ref: '#/components/responses/InternalServerError' }
 
   /v1/projects/_/environments/{environment_id}/clients:
+    get:
+      operationId: getClientsV1
+      tags:
+        - admin
+      summary: Get client
+      description: Get all clients in an environment
+      parameters:
+        - name: environment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The UUID of the environment.
+      responses:
+        '200':
+          description: list of clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClientRepresentation'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
     post:
+      operationId: createClientV1
       tags:
         - admin
       summary: Create client
@@ -273,7 +298,7 @@ paths:
               required:
                 - name
       responses:
-        '201': { $ref: '#/components/responses/CreateClientResponse'}
+        '201': { $ref: '#/components/responses/CreateClientResponse' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -281,6 +306,7 @@ paths:
 
   /v1/environments/{environment_id}/secrets:
     get:
+      operationId: getEnvironmentSecretsV1
       tags:
         - client
         - admin
@@ -329,6 +355,12 @@ components:
                   - key
                   - generator
   responses:
+    ClientRepresentationResponse:
+      description: client object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ClientRepresentation'
     CreateClientResponse:
       description: Created Client
       content:

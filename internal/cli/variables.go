@@ -63,7 +63,7 @@ func listVariablesSubcommand() *cli.Command {
 			}
 
 			client, _ := getAPIClient(cfg, sharedCfg)
-			resp, err := client.GetV1ProjectsProjectIdVariablesWithResponse(c.Context, projectId)
+			resp, err := client.GetVariablesV1WithResponse(c.Context, projectId)
 			if err != nil {
 				return cli.Exit(fmt.Sprintf("request failed: %v", err.Error()), 1)
 			}
@@ -167,7 +167,7 @@ func createVariableSubcommand() *cli.Command {
 			}
 
 			client, _ := getAPIClient(cfg, sharedCfg)
-			req := api.PostV1ProjectsProjectIdVariablesJSONRequestBody{
+			req := api.CreateVariableV1JSONRequestBody{
 				Key: name,
 			}
 
@@ -191,7 +191,7 @@ func createVariableSubcommand() *cli.Command {
 				return cli.Exit(fmt.Sprintf("\"%s\" is not a handled variable type", typ), 1)
 			}
 
-			resp, err := client.PostV1ProjectsProjectIdVariablesWithResponse(c.Context, projectId, req)
+			resp, err := client.CreateVariableV1WithResponse(c.Context, projectId, req)
 			if err != nil {
 				return cli.Exit(fmt.Sprintf("request failed: %v", err.Error()), 1)
 			}
