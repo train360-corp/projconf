@@ -208,7 +208,6 @@ func (s *RouteHandlers) GetEnvironmentsV1(c *gin.Context, projectId openapitypes
 }
 
 func (s *RouteHandlers) CreateEnvironmentV1(c *gin.Context, projectId openapitypes.UUID) {
-
 	var req api.CreateEnvironmentV1JSONRequestBody
 	c.BindJSON(&req)
 
@@ -253,7 +252,6 @@ func (s *RouteHandlers) GetProjectsV1(c *gin.Context) {
 }
 
 func (s *RouteHandlers) CreateProjectV1(c *gin.Context) {
-
 	var req api.CreateProjectV1JSONRequestBody
 	c.BindJSON(&req)
 

@@ -52,7 +52,7 @@ func post[T any](c *Client, table string, requestData any) (*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode == http.StatusCreated {
+	if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusOK {
 		var out T
 		if err := json.Unmarshal(responseBody, &out); err != nil {
 			return nil, fmt.Errorf("decode %s: %w", table, err)

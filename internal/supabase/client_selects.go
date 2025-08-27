@@ -195,7 +195,6 @@ func (c *Client) GetSecrets(environmentId string) (api.Secrets, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		fmt.Println(string(body))
 		return nil, errors.New("unable to load secrets")
 	}
 
