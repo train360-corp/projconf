@@ -244,7 +244,7 @@ func serveCommand() *cli.Command {
 			}
 
 			services := docker.GetServices()
-			errCh := make(chan error, len(services)+2)
+			errCh := make(chan error)
 
 			// --- Clean start (blocking, cancel-aware)
 			if err := mustCleanStart(ctx); err != nil {

@@ -16,26 +16,19 @@ import (
 	"net/http"
 )
 
-type HTTPServer struct {
+type ProjConfServer struct {
 	cfg    *Config
 	router *gin.Engine
 	http   *http.Server
 }
 
-func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
+func NewHTTPServer(cfg *Config) (*ProjConfServer, error) {
 
-	switch cfg.Mode {
-	case gin.DebugMode, gin.ReleaseMode, gin.TestMode:
-		gin.SetMode(cfg.Mode)
-	default:
-		gin.SetMode(gin.ReleaseMode)
-	}
+	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
-	router.Use(gin.Recovery())
-
-	// authentication middleware
-	router.Use(auth(cfg))
+	router.Use(gin.Recovery()) // handle panics, etc.
+	router.Use(auth(cfg))      // authentication middleware
 
 	// use custom validation
 	swagger := api.MustSpec()
@@ -44,7 +37,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	// use route handlers
 	api.RegisterHandlers(router, GetServerInterface())
 
-	return &HTTPServer{
+	return &ProjConfServer{
 		cfg:    cfg,
 		router: router,
 		http: &http.Server{
@@ -54,10 +47,10 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	}, nil
 }
 
-func (s *HTTPServer) Serve() error {
+func (s *ProjConfServer) Serve() error {
 	return s.http.ListenAndServe()
 }
 
-func (s *HTTPServer) Shutdown(ctx context.Context) error {
+func (s *ProjConfServer) Shutdown(ctx context.Context) error {
 	return s.http.Shutdown(ctx)
 }
