@@ -9,6 +9,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/train360-corp/projconf/cmd"
@@ -20,29 +21,19 @@ import (
 )
 
 func main() {
+	ctx, shutdown := withGracefulSignals(context.Background(), 10*time.Second)
+	defer shutdown()
 
-	// graceful shutdown
-	ctx, stop := WithGracefulSignals(context.Background(), 10*time.Second)
-	defer stop()
-
-	// run the CLI
-	cliCtx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-	err := cmd.CLI().ExecuteContext(cliCtx)
-	if err != nil {
-		if cliCtx.Err() != nil {
-			// if context was canceled due to signal, exit code 130 is conventional for SIGINT
-			os.Exit(130)
+	if err := cmd.CLI().ExecuteContext(ctx); err != nil {
+		if errors.Is(ctx.Err(), context.Canceled) {
+			os.Exit(130) // conventional for SIGINT
 		}
 		fmt.Fprintln(os.Stderr, color.RedString("error: %v", err))
 		os.Exit(1)
 	}
 }
 
-// WithGracefulSignals returns a context that cancels on first SIGINT/SIGTERM,
-// then waits 'grace' for cleanup. A second signal (or the grace expiring)
-// forces process exit.
-func WithGracefulSignals(parent context.Context, grace time.Duration) (context.Context, func()) {
+func withGracefulSignals(parent context.Context, grace time.Duration) (context.Context, func()) {
 	ctx, cancel := context.WithCancel(parent)
 
 	sigCh := make(chan os.Signal, 2)
@@ -51,7 +42,7 @@ func WithGracefulSignals(parent context.Context, grace time.Duration) (context.C
 	go func() {
 		<-sigCh // first signal
 		log.Printf("received interrupt — beginning graceful shutdown (%s grace)...", grace)
-		cancel() // tell your workers to stop (RunService will see ctx.Done())
+		cancel() // tell workers to stop
 
 		timer := time.NewTimer(grace)
 		defer timer.Stop()
@@ -60,16 +51,15 @@ func WithGracefulSignals(parent context.Context, grace time.Duration) (context.C
 		case <-timer.C:
 			log.Println("grace period elapsed — forcing exit.")
 			os.Exit(1)
-		case <-sigCh: // second signal
+		case <-sigCh: // second real signal
 			log.Println("second interrupt — forcing exit.")
 			os.Exit(2)
 		}
 	}()
 
-	// stop function: stop listening and cancel context
+	// IMPORTANT: do NOT close(sigCh)
 	stop := func() {
-		signal.Stop(sigCh)
-		close(sigCh)
+		signal.Stop(sigCh) // stop delivering to sigCh
 		cancel()
 	}
 	return ctx, stop

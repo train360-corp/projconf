@@ -11,8 +11,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/train360-corp/projconf/internal/utils/tables"
 	"github.com/train360-corp/projconf/internal/utils/validators"
 	"github.com/train360-corp/projconf/pkg/api"
 	"strings"
@@ -55,9 +57,13 @@ var listClientsCmd = &cobra.Command{
 		if resp.JSON200 != nil {
 			if len(*resp.JSON200) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "no clients found")
-			}
-			for _, client := range *resp.JSON200 {
-				fmt.Fprintln(cmd.OutOrStdout(), fmt.Sprintf("%s: %s", client.Id, client.Display))
+			} else {
+				fmt.Fprintln(cmd.OutOrStdout(), tables.Build(
+					*resp.JSON200,
+					tables.ColumnsByFieldNames[api.ClientRepresentation]("Id", "Display", "CreatedAt"),
+					tables.WithTitle("Clients"),
+					tables.WithStyle(table.StyleLight),
+				))
 			}
 		} else {
 			return errors.New(api.GetAPIError(resp))
@@ -110,10 +116,10 @@ var createClientCmd = &cobra.Command{
 
 func init() {
 
-	listClientsCmd.Flags().StringVar(&environmentIdStr, "env-id", "", "the id of the environment to list clients for")
+	listClientsCmd.Flags().StringVar(&environmentIdStr, "environment-id", "", "the id of the environment to list clients for")
 	listClientsCmd.MarkFlagRequired("env-id")
 
-	createClientCmd.Flags().StringVar(&environmentIdStr, "env-id", "", "the id of the environment to create the client with")
+	createClientCmd.Flags().StringVar(&environmentIdStr, "environment-id", "", "the id of the environment to create the client with")
 	createClientCmd.MarkFlagRequired("env-id")
 
 	addAuthFlags(listClientsCmd)

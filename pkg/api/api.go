@@ -5,6 +5,7 @@
  * commercial license.
  */
 
+//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --package api -o api.gen.go --generate models,gin-server,client,skip-prune openapi.yaml
 package api
 
 import (

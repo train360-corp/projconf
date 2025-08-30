@@ -11,8 +11,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/train360-corp/projconf/internal/utils/tables"
 	"github.com/train360-corp/projconf/internal/utils/validators"
 	"github.com/train360-corp/projconf/pkg/api"
 	"strings"
@@ -54,9 +56,13 @@ var listEnvironmentsCmd = &cobra.Command{
 		if resp.JSON200 != nil {
 			if len(*resp.JSON200) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "no environments found")
-			}
-			for _, env := range *resp.JSON200 {
-				fmt.Fprintln(cmd.OutOrStdout(), fmt.Sprintf("%s: %s", env.Id, env.Display))
+			} else {
+				fmt.Fprintln(cmd.OutOrStdout(), tables.Build(
+					*resp.JSON200,
+					tables.ColumnsByFieldNames[api.Environment]("Id", "Display"),
+					tables.WithTitle("Environments"),
+					tables.WithStyle(table.StyleLight),
+				))
 			}
 		} else {
 			return errors.New(api.GetAPIError(resp))

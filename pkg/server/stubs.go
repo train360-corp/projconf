@@ -5,14 +5,6 @@
  * commercial license.
  */
 
-/*
- * Use of this software is governed by the Business Source License
- * included in the LICENSE file. Production use is permitted, but
- * offering this software as a managed service requires a separate
- * commercial license.
- */
-
-//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --package api -o api.gen.go --generate models,gin-server,client,skip-prune openapi.yaml
 package server
 
 import (
@@ -293,7 +285,15 @@ func (s *RouteHandlers) GetProjectsV1(c *gin.Context) {
 			Description: err.Error(),
 		})
 	} else {
-		c.JSON(http.StatusOK, projects)
+		var resp api.Projects
+		for _, p := range *projects {
+			id, _ := uuid.Parse(p.Id)
+			resp = append(resp, api.Project{
+				Id:      id,
+				Display: p.Display,
+			})
+		}
+		c.JSON(http.StatusOK, resp)
 	}
 }
 

@@ -66,6 +66,15 @@ type ID struct {
 	Id openapi_types.UUID `json:"id"`
 }
 
+// Project defines model for Project.
+type Project struct {
+	Display string             `json:"display"`
+	Id      openapi_types.UUID `json:"id"`
+}
+
+// Projects defines model for Projects.
+type Projects = []Project
+
 // RandomGeneratorData defines model for RandomGeneratorData.
 type RandomGeneratorData struct {
 	Length  float32 `json:"length"`
@@ -1445,14 +1454,11 @@ func (r GetEnvironmentSecretsV1Response) StatusCode() int {
 type GetProjectsV1Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]struct {
-		Display string `json:"display"`
-		Id      string `json:"id"`
-	}
-	JSON400 *BadRequest
-	JSON401 *Unauthorized
-	JSON403 *Forbidden
-	JSON500 *InternalServerError
+	JSON200      *Projects
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON500      *InternalServerError
 }
 
 // Status returns HTTPResponse.Status
@@ -2025,10 +2031,7 @@ func ParseGetProjectsV1Response(rsp *http.Response) (*GetProjectsV1Response, err
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []struct {
-			Display string `json:"display"`
-			Id      string `json:"id"`
-		}
+		var dest Projects
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
