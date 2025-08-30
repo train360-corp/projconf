@@ -25,4 +25,5 @@ type Service interface {
 	TempFiles() []ServiceTempFile
 	Args(Env) []string
 	HealthCheck(context.Context) (bool, int)
+	AfterStart()
 }

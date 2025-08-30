@@ -9,6 +9,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/fatih/color"
 	"github.com/train360-corp/projconf/cmd"
 	"log"
 	"os"
@@ -18,9 +20,23 @@ import (
 )
 
 func main() {
+
+	// graceful shutdown
 	ctx, stop := WithGracefulSignals(context.Background(), 10*time.Second)
 	defer stop()
-	cmd.Execute(ctx)
+
+	// run the CLI
+	cliCtx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	err := cmd.CLI().ExecuteContext(cliCtx)
+	if err != nil {
+		if cliCtx.Err() != nil {
+			// if context was canceled due to signal, exit code 130 is conventional for SIGINT
+			os.Exit(130)
+		}
+		fmt.Fprintln(os.Stderr, color.RedString("error: %v", err))
+		os.Exit(1)
+	}
 }
 
 // WithGracefulSignals returns a context that cancels on first SIGINT/SIGTERM,

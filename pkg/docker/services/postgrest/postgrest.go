@@ -10,13 +10,19 @@ package postgrest
 import (
 	"context"
 	"fmt"
+	"github.com/train360-corp/projconf/internal/consts"
 	"github.com/train360-corp/projconf/pkg/docker"
-	"github.com/train360-corp/projconf/pkg/docker/services/database"
+	"github.com/train360-corp/projconf/pkg/docker/utils"
+	"github.com/train360-corp/projconf/pkg/server/state"
 )
 
 type Service struct{}
 
 const ContainerName = "projconf-internal-supabase-postgrest"
+
+func (s Service) AfterStart() {
+	state.Get().SetPostgrestAlive(true)
+}
 
 func (s Service) ContainerName() string {
 	return ContainerName
@@ -34,7 +40,9 @@ func (s Service) Args(env docker.Env) []string {
 		"--label", "com.docker.compose.version=2.0",
 		"--network", "projconf-net",
 		"--network-alias", "rest",
-		"-e", fmt.Sprintf("PGRST_DB_URI=postgres://authenticator:%s@%s:5432/postgres", env.PGPASSWORD, database.ContainerName),
+		"-p", "127.0.0.1:3000:3000",
+		"-p", "127.0.0.1:3001:3001",
+		"-e", fmt.Sprintf("PGRST_DB_URI=postgres://authenticator:%s@%s:5432/postgres", env.PGPASSWORD, consts.PostgresContainerName),
 		"-e", "PGRST_DB_SCHEMAS=public",
 		"-e", "PGRST_DB_ANON_ROLE=anon",
 		"-e", fmt.Sprintf("PGRST_JWT_SECRET=%s", env.JWT_SECRET),
@@ -48,7 +56,7 @@ func (s Service) Args(env docker.Env) []string {
 }
 
 func (s Service) HealthCheck(ctx context.Context) (bool, int) {
-	return true, 0
+	return utils.HttpHealthCheck(ctx, "http://127.0.0.1:3001/ready")
 }
 
 func (s Service) TempFiles() []docker.ServiceTempFile {

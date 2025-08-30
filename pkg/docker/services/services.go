@@ -9,15 +9,13 @@ package services
 
 import (
 	"github.com/train360-corp/projconf/pkg/docker"
-	"github.com/train360-corp/projconf/pkg/docker/services/database"
-	"github.com/train360-corp/projconf/pkg/docker/services/kong"
+	"github.com/train360-corp/projconf/pkg/docker/services/postgres"
 	"github.com/train360-corp/projconf/pkg/docker/services/postgrest"
 )
 
 func GetServices() []docker.Service {
 	return []docker.Service{
-		database.Service{},
+		postgres.Service{},
 		postgrest.Service{},
-		kong.Service{},
 	}
 }

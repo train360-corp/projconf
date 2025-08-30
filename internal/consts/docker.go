@@ -5,11 +5,9 @@
  * commercial license.
  */
 
-package docker
+package consts
 
-type Env struct {
-	PGPASSWORD             string
-	JWT_SECRET             string
-	PROJCONF_ADMIN_API_KEY string
-	SUPABASE_PUBLIC_KEY    string
-}
+const (
+	KongContainerName     = "projconf-internal-supabase-kong"
+	PostgresContainerName = "projconf-internal-supabase-db"
+)

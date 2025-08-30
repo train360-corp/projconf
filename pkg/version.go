@@ -5,11 +5,6 @@
  * commercial license.
  */
 
-package docker
+package pkg
 
-type Env struct {
-	PGPASSWORD             string
-	JWT_SECRET             string
-	PROJCONF_ADMIN_API_KEY string
-	SUPABASE_PUBLIC_KEY    string
-}
+var Version = ""
