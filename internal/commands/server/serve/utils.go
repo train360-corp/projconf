@@ -11,6 +11,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/train360-corp/projconf/pkg/supabase/migrations"
 	"io"
 	"net/http"
@@ -198,4 +200,44 @@ func loadSchemaMigrations(ctx context.Context, containerID string) ([]SchemaMigr
 		return nil, fmt.Errorf("unmarshal: %w (out=%s)", err, trimmed)
 	}
 	return migrations, nil
+}
+
+// RemoveDanglingContainers ensures that any old or dangling projconf containers are stopped and removed.
+func RemoveDanglingContainers(ctx context.Context) error {
+
+	MustLogger()
+	MustCli()
+
+	// Filter containers whose names contain "projconf"
+	f := filters.NewArgs()
+	f.Add("label", "com.docker.compose.project=projconf")
+
+	containers, err := Cli.ContainerList(ctx, container.ListOptions{
+		All:     true,
+		Filters: f,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list containers: %v", err)
+	}
+
+	for _, c := range containers {
+		name := strings.Join(c.Names, ",")
+		Logger.Debug(fmt.Sprintf("cleaning up container %s (%s)", name, c.ID[:12]))
+
+		// Try to stop it first (ignore error if already exited)
+		if c.State == "running" {
+			if err := Cli.ContainerStop(ctx, c.ID, container.StopOptions{}); err != nil {
+				Logger.Warn(fmt.Sprintf("failed to stop container %s: %v", c.ID[:12], err))
+			}
+		}
+
+		// Remove it (force if necessary)
+		if err := Cli.ContainerRemove(ctx, c.ID, container.RemoveOptions{Force: true}); err != nil {
+			return fmt.Errorf("failed to remove container %s: %v", c.ID[:12], err)
+		} else {
+			Logger.Debug(fmt.Sprintf("removed stale container %s", c.ID[:12]))
+		}
+	}
+
+	return nil
 }

@@ -10,7 +10,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/spf13/cobra"
 	"github.com/train360-corp/projconf/internal/commands/server/serve"
 	"github.com/train360-corp/projconf/internal/commands/server/serve/postgres"
 	"github.com/train360-corp/projconf/internal/commands/server/serve/postgrest"
@@ -19,13 +18,14 @@ import (
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 )
 
-func Command(c *cobra.Command, _ []string) {
+func Serve(c context.Context) {
 
-	sigCtx, stopSig := signal.NotifyContext(c.Context(), os.Interrupt, syscall.SIGTERM)
+	sigCtx, stopSig := signal.NotifyContext(c, os.Interrupt, syscall.SIGTERM)
 	defer stopSig()
 	ctx, cancel := context.WithCancel(sigCtx)
 	defer cancel()
@@ -62,12 +62,25 @@ func Command(c *cobra.Command, _ []string) {
 	}
 	serve.Logger.Debug(fmt.Sprintf("system projconf dir: %s", dataDir))
 
+	isFirstStart := false
+	if _, err := os.Stat(filepath.Join(dataDir, "data", "PG_VERSION")); err != nil && os.IsNotExist(err) {
+		serve.Logger.Debug("detected first-start")
+		isFirstStart = true
+	}
+
 	// setup client
 	serve.Logger.Debug("initializing docker client")
 	serve.InitCli(ctx)
 	serve.MustCli()
 	defer serve.Cli.Close()
 	serve.Logger.Info("successfully initialized docker client")
+
+	// remove any hanging processes from previous start
+	serve.Logger.Debug("removing dangling container(s)")
+	if err := serve.RemoveDanglingContainers(ctx); err != nil {
+		serve.Logger.Fatal(fmt.Sprintf("failed to remove dangling container(s): %v", err))
+	}
+	serve.Logger.Debug("successfully removed dangling container(s)")
 
 	// setup network
 	serve.Logger.Debug("initializing docker network")
@@ -83,8 +96,7 @@ func Command(c *cobra.Command, _ []string) {
 			stops = append(stops, f)
 		}
 	}
-	stopAll := func() {
-		// stop in reverse creation order
+	stopAll := func() { // stop in reverse creation order (for dependency)
 		for i := len(stops) - 1; i >= 0; i-- {
 			if err := stops[i](); err != nil {
 				serve.Logger.Warn(fmt.Sprintf("stop failed: %v", err))
@@ -115,6 +127,14 @@ func Command(c *cobra.Command, _ []string) {
 			if err := serve.WaitPostgresReady(ctx, id); err != nil {
 				stopAll()
 				serve.Logger.Fatal(fmt.Sprintf("failed to wait for postgres ready: %v", err))
+			}
+
+			// if this is the first start with a fresh data dir, cleanly exit
+			if isFirstStart {
+				serve.Logger.Warn("Detected first start (fresh data dir). Initialization complete; performing clean shutdown so you can restart normally.")
+				cancel()  // Cancel the runtime context so the HTTP server and any waiters can shut down
+				stopAll() // Stop any started containers/services (currently just Postgres)
+				return
 			}
 
 			serve.Logger.Debug("patching postgres password")

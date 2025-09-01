@@ -60,6 +60,9 @@ func Service(req ServiceRequest) (*types.Service, error) {
 		Name:   ContainerName,
 		Mounts: mounts,
 		Ports:  make([]uint16, 0),
+		Labels: map[string]string{
+			"projconf.service": "postgres",
+		},
 		Cmd: []string{
 			"postgres",
 			"-c", "config_file=/etc/postgresql/postgresql.conf",

@@ -53,6 +53,9 @@ func RunService(ctx context.Context, svc *types.Service, onExit func()) (string,
 		}
 	}
 
+	// add projconf label
+	svc.Labels["com.docker.compose.project"] = "projconf"
+
 	// create container
 	resp, err := Cli.ContainerCreate(ctx,
 		&container.Config{
@@ -62,7 +65,6 @@ func RunService(ctx context.Context, svc *types.Service, onExit func()) (string,
 			OpenStdin:    true,  // keep a stdin pipe open from our process
 			StdinOnce:    true,  // when our stdin attach disconnects, close container's STDIN
 			Tty:          false, // keep streams multiplexed for stdcopy
-			Labels:       svc.Labels,
 			ExposedPorts: exposedPorts,
 		},
 		&container.HostConfig{

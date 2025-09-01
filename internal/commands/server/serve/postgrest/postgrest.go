@@ -25,6 +25,9 @@ func Service(req ServiceRequest) *types.Service {
 		Cmd: []string{
 			"postgrest",
 		},
+		Labels: map[string]string{
+			"projconf.service": "postgrest",
+		},
 		Ports: []uint16{3000, 3001},
 		Env: []string{
 			fmt.Sprintf("PGRST_DB_URI=postgres://authenticator:%s@%s:5432/postgres", req.PostgresPassword, postgres.ContainerName),

@@ -45,6 +45,9 @@ var serveCmd = &cobra.Command{
 
 Default values will be created and stored in a local 
 file accessible only by the current user.`,
+	Run: func(cmd *cobra.Command, _ []string) {
+		server.Serve(cmd.Context())
+	},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 
 		if strings.TrimSpace(server.AdminApiKey) == "" {
@@ -58,7 +61,6 @@ file accessible only by the current user.`,
 		}
 		return nil
 	},
-	Run: server.Command,
 }
 
 func init() {
