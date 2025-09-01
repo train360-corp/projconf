@@ -12,6 +12,7 @@ Install:
 
 ```shell
 # install dependencies
+apt update
 apt install -y curl gnupg sudo 
 
 # Add PPA Signing Key
