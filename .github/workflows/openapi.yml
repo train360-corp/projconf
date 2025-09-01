@@ -4,6 +4,7 @@ permissions:
   pages: write
   id-token: write
 on:
+  workflow_dispatch: {}
   push:
     branches:
       - main
