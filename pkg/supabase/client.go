@@ -9,7 +9,7 @@ package supabase
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/train360-corp/projconf/internal/consts"
+	"github.com/train360-corp/projconf/pkg/consts"
 	"github.com/train360-corp/projconf/pkg/server/state"
 	"github.com/train360-corp/projconf/pkg/supabase/database"
 )

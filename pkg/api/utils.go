@@ -9,7 +9,7 @@ package api
 
 import (
 	"context"
-	"github.com/train360-corp/projconf/internal/consts"
+	"github.com/train360-corp/projconf/pkg/consts"
 	"net/http"
 	"strings"
 )

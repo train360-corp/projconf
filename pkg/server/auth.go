@@ -10,8 +10,8 @@ package server
 import (
 	"crypto/subtle"
 	"github.com/gin-gonic/gin"
-	"github.com/train360-corp/projconf/internal/consts"
 	"github.com/train360-corp/projconf/pkg/api"
+	"github.com/train360-corp/projconf/pkg/consts"
 	"github.com/train360-corp/projconf/pkg/supabase"
 	"net/http"
 	"strings"

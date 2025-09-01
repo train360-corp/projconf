@@ -12,7 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/train360-corp/projconf/internal/consts"
+	"github.com/train360-corp/projconf/pkg/consts"
 	"github.com/train360-corp/projconf/pkg/supabase/database"
 	"io"
 	"net/http"
