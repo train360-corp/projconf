@@ -52,27 +52,6 @@ nfpms:
       - archlinux
     dependencies:
       - openssl
-    overrides:
-      deb:
-        # Debian/Ubuntu: pg_isready is in postgresql-client
-        dependencies:
-          - openssl
-          - postgresql-client
-      rpm:
-        # RHEL/CentOS/Fedora: pg_isready is in postgresql (client)
-        dependencies:
-          - openssl
-          - postgresql
-      archlinux:
-        # Arch: client tools are in postgresql
-        dependencies:
-          - openssl
-          - postgresql
-      apk:
-        # Alpine: pg_isready is versioned, e.g., postgresql16-client.
-        dependencies:
-          - openssl
-          - postgresql15-client # uses v. 15 currently
 
 archives:
   - formats: [ tar.gz ]
