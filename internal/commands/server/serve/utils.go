@@ -1,0 +1,201 @@
+/*
+ * Use of this software is governed by the Business Source License
+ * included in the LICENSE file. Production use is permitted, but
+ * offering this software as a managed service requires a separate
+ * commercial license.
+ */
+
+package serve
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/train360-corp/projconf/pkg/supabase/migrations"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+)
+
+// previewString returns the first and last five characters of a string, separated by '...'
+func previewString(s string) string {
+	if len(s) <= 10 {
+		return s
+	}
+	return fmt.Sprintf("%s...%s", s[:5], previewString(s[len(s)-5:]))
+}
+
+func waitPostgresReady(ctx context.Context, id string) error {
+	backoff := time.Second
+	for retries := 0; retries < 5; retries++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		out, err := exec(ctx, id, []string{"pg_isready"})
+		if err == nil && strings.Contains(out, "accepting connections") {
+			return nil
+		}
+		timer := time.NewTimer(backoff)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+		if backoff < 5*time.Second {
+			backoff *= 2
+		}
+	}
+	return fmt.Errorf("pg_isready did not succeed")
+}
+
+func waitHTTPReady(ctx context.Context, url string) error {
+	client := &http.Client{Timeout: 2 * time.Second}
+	backoff := time.Second
+	for retries := 0; retries < 5; retries++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		resp, err := client.Get(url)
+		if err == nil {
+			io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+			if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+				return nil
+			}
+		}
+		timer := time.NewTimer(backoff)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+		if backoff < 5*time.Second {
+			backoff *= 2
+		}
+	}
+	return fmt.Errorf("http not ready: %s", url)
+}
+
+func migrate(ctx context.Context, pgContainerId string) error {
+
+	mustLogger()
+
+	// apply migrations to build migrations_schema
+	sql := "BEGIN;\n"
+	for _, stmt := range migrations.MigrationsSchemaStatements {
+		sql += stmt + ";\n"
+	}
+	sql += "COMMIT;"
+	output, err := exec(ctx, pgContainerId, []string{
+		"psql",
+		"-h", "127.0.0.1",
+		"-U", "supabase_admin",
+		"-d", "postgres",
+		"-v", "ON_ERROR_STOP=1",
+		"-c", sql,
+	})
+	if err != nil {
+		return fmt.Errorf("migrate migrations meta-schema failed (%v): %s", err, strings.ReplaceAll(strings.TrimSpace(output), "\n", "\\n"))
+	}
+	Logger.Debug(fmt.Sprintf("migrate migrations meta-schema succeeded: %s", strings.ReplaceAll(strings.TrimSpace(output), "\n", "\\n")))
+
+	existingMigrations, err := loadSchemaMigrations(ctx, pgContainerId)
+	if err != nil {
+		return fmt.Errorf("failed to load existing schema migrations: %s", err.Error())
+	}
+
+	m, _ := migrations.Get()
+	commands := make([]string, 0)
+	applied := 0
+	passed := 0
+	for _, migration := range m {
+
+		parts := strings.Split(migration.Name, "_")
+		version := parts[0]
+		name := strings.TrimSuffix(parts[1], ".sql")
+
+		alreadyApplied := false
+		for _, existingMigration := range existingMigrations {
+			if existingMigration.Version == version {
+				alreadyApplied = true
+				passed++
+			}
+		}
+
+		if !alreadyApplied {
+			applied++
+			commands = append(commands, string(migration.Data), fmt.Sprintf("INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('%s', '%s')", version, name))
+		}
+	}
+
+	sql = "BEGIN;\n"
+	for _, stmt := range commands {
+		sql += stmt + ";\n"
+	}
+	sql += "COMMIT;"
+	if output, err := exec(ctx, pgContainerId, []string{
+		"psql",
+		"-h", "127.0.0.1",
+		"-U", "supabase_admin",
+		"-d", "postgres",
+		"-v", "ON_ERROR_STOP=1",
+		"-c", sql,
+	}); err != nil {
+		return fmt.Errorf("failed to apply migrations: %v", err)
+	} else {
+		Logger.Debug(fmt.Sprintf("apply migrations succeeded: %s", strings.ReplaceAll(strings.TrimSpace(output), "\n", "\\n")))
+	}
+	Logger.Info(fmt.Sprintf("%v new migrations applied (%v already applied)", applied, passed))
+
+	return nil
+}
+
+type SchemaMigration struct {
+	Version    string   `json:"version"`        // primary key
+	Statements []string `json:"statements"`     // list of SQL statements
+	Name       *string  `json:"name,omitempty"` // optional human-readable name
+}
+
+func loadSchemaMigrations(ctx context.Context, containerID string) ([]SchemaMigration, error) {
+	sql := `
+      SELECT coalesce(json_agg(row_to_json(t)), '[]')
+      FROM (
+        SELECT version, statements, name
+        FROM supabase_migrations.schema_migrations
+        ORDER BY version
+      ) t;
+    `
+
+	out, err := exec(ctx, containerID, []string{
+		"psql",
+		"-h", "127.0.0.1",
+		"-U", "supabase_admin",
+		"-d", "postgres",
+		"-t", "-A", "-F", ",", // no headers, unaligned
+		"-v", "ON_ERROR_STOP=1",
+		"-c", sql,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("psql exec: %w (out=%s)", err, strings.TrimSpace(out))
+	}
+
+	// out will be something like:
+	//  [{"version":"20240901","statements":["..."],"name":"init"}]
+	trimmed := strings.TrimSpace(out)
+	if trimmed == "" {
+		return nil, nil
+	}
+
+	var migrations []SchemaMigration
+	if err := json.Unmarshal([]byte(trimmed), &migrations); err != nil {
+		return nil, fmt.Errorf("unmarshal: %w (out=%s)", err, trimmed)
+	}
+	return migrations, nil
+}

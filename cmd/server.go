@@ -11,30 +11,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jackc/pgx/v5"
 	"github.com/spf13/cobra"
-	"github.com/train360-corp/projconf/internal/consts"
+	"github.com/train360-corp/projconf/internal/commands/server/serve"
 	"github.com/train360-corp/projconf/internal/fs"
 	"github.com/train360-corp/projconf/internal/utils"
-	"github.com/train360-corp/projconf/internal/utils/postgres"
 	"github.com/train360-corp/projconf/internal/utils/validators"
-	"github.com/train360-corp/projconf/pkg"
-	"github.com/train360-corp/projconf/pkg/docker"
-	"github.com/train360-corp/projconf/pkg/docker/services"
-	"github.com/train360-corp/projconf/pkg/server"
-	"github.com/train360-corp/projconf/pkg/server/state"
-	"github.com/train360-corp/projconf/pkg/supabase/migrations"
 	"github.com/zalando/go-keyring"
-	"golang.org/x/sync/errgroup"
+	"go.uber.org/zap/zapcore"
 	"io"
 	"log"
-	"math"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 const (
@@ -46,8 +35,9 @@ const (
 )
 
 var (
-	host string
-	port uint16
+	host        string
+	port        uint16
+	logLevelStr string = "warn"
 )
 
 var serverCmd = &cobra.Command{
@@ -110,6 +100,12 @@ file accessible only by the current user.`,
 			adminApiKey = utils.RandomString(32)
 		}
 
+		if level, err := zapcore.ParseLevel(logLevelStr); err != nil {
+			return fmt.Errorf("invalid log level (\"%s\"): %v", logLevelStr, err)
+		} else {
+			serve.LogLevel = level
+		}
+
 		if !validators.IsValidHost(host) {
 			return errors.New(fmt.Sprintf("invalid host: %s", host))
 		}
@@ -120,160 +116,161 @@ file accessible only by the current user.`,
 
 		return nil
 	},
-	RunE: func(c *cobra.Command, args []string) error {
-
-		log.Printf("starting ProjConf Server %s", pkg.Version)
-
-		ctx, cancel := context.WithCancel(c.Context())
-		defer cancel()
-		g, ctx := errgroup.WithContext(ctx)
-
-		if err := mustCleanStart(ctx); err != nil {
-			return fmt.Errorf("failed to clean-up dangling docker services: %v", err)
-		}
-
-		pgPass, err := keyring.Get("projconf", "postgres")
-		if err != nil {
-			if errors.Is(err, keyring.ErrNotFound) {
-				pgPass = utils.RandomString(32)
-				if err := keyring.Set("projconf", "postgres", pgPass); err != nil {
-					return fmt.Errorf("could not store postgres password: %v", err)
-				}
-			} else {
-				return fmt.Errorf("could not get postgres password from keyring: %v", err)
-			}
-		}
-
-		srvCfg := server.Config{
-			Host:        host,
-			Port:        port,
-			AdminAPIKey: adminApiKey,
-			AnonKey:     state.Get().AnonKey(),
-		}
-		srv, err := server.NewHTTPServer(&srvCfg)
-		if err != nil {
-			return fmt.Errorf("unable to initialize server: %v", err.Error())
-		}
-
-		// run the server
-		g.Go(func() error {
-			addr := fmt.Sprintf("%s:%d", srvCfg.Host, srvCfg.Port)
-			log.Printf("HTTP server listening on http://%s\t(admin access token: %s)\n", addr, adminApiKey)
-			if err := srv.Serve(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				return fmt.Errorf("http server error: %w", err)
-			}
-			return nil
-		})
-
-		// run required services
-		for _, service := range services.GetServices() {
-			g.Go(func() error {
-				err := docker.RunService(ctx, service, docker.Env{
-					PGPASSWORD:             pgPass,
-					JWT_SECRET:             state.Get().JwtSecret(),
-					PROJCONF_ADMIN_API_KEY: adminApiKey,
-					SUPABASE_PUBLIC_KEY:    state.Get().AnonKey(),
-				})
-				if errors.Is(err, context.Canceled) { // treat graceful cancellation as success.
-					return nil
-				}
-				return err
-			})
-
-			retries := 0
-			alive := false
-			for !alive {
-				a, code := service.HealthCheck(ctx)
-				if a {
-					alive = true
-					log.Printf("started %v", service.Display())
-					service.AfterStart()
-				} else {
-					if retries > 0 {
-						log.Printf("health check failed with code %d (retry=%d)", code, retries)
-					}
-					retries++
-					time.Sleep(time.Duration(math.Pow(2, float64(retries))) * time.Second)
-					if retries > 3 {
-						return fmt.Errorf("timed out waiting for health check")
-					}
-				}
-			}
-
-			if service.ContainerName() == consts.PostgresContainerName {
-
-				log.Println("applying migrations...")
-
-				// do migrations
-				conn, err := pgx.Connect(ctx, fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
-					"supabase_admin",
-					pgPass,
-					"127.0.0.1",
-					5432,
-					"postgres",
-				))
-				if err != nil {
-					return fmt.Errorf("could not connect to postgres: %v", err)
-				}
-
-				// apply migrations to build migrations_schema
-				if err := postgres.Execute(ctx, conn, migrations.MigrationsSchemaStatements); err != nil {
-					return errors.New(fmt.Sprintf("failed to apply migrations schema migrations: %s", err))
-				} else {
-					log.Printf("migrations schema migrated successfully")
-				}
-
-				existingMigrations, err := migrations.LoadSchemaMigrations(ctx, conn)
-				if err != nil {
-					return errors.New(fmt.Sprintf("failed to load existing schema migrations: %s", err.Error()))
-				}
-
-				m, _ := migrations.Get()
-				commands := make([]string, 0)
-				applied := 0
-				passed := 0
-				for _, migration := range m {
-
-					parts := strings.Split(migration.Name, "_")
-					version := parts[0]
-					name := strings.TrimSuffix(parts[1], ".sql")
-
-					alreadyApplied := false
-					for _, existingMigration := range existingMigrations {
-						if existingMigration.Version == version {
-							alreadyApplied = true
-							passed++
-						}
-					}
-
-					if !alreadyApplied {
-						applied++
-						commands = append(commands, string(migration.Data))
-						commands = append(commands, fmt.Sprintf("INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('%s', '%s')", version, name))
-					}
-				}
-				if err := postgres.Execute(ctx, conn, commands); err != nil {
-					return errors.New(fmt.Sprintf("failed to apply migrations: %s", err))
-				} else {
-					log.Printf("%v new migrations applied (%v already applied)", applied, passed)
-				}
-
-				conn.Close(ctx)
-			}
-		}
-
-		// gracefully shut the HTTP server down.
-		g.Go(func() error {
-			<-ctx.Done()
-			shutdownCtx, cancel := context.WithTimeout(c.Context(), 15*time.Second)
-			defer cancel()
-			_ = srv.Shutdown(shutdownCtx) // ignore error; the error path is returned by the server goroutine
-			return nil
-		})
-
-		// Wait for the first error; this also returns nil if everything ended cleanly.
-		return g.Wait()
-	},
+	Run: serve.Command,
+	//RunE: func(c *cobra.Command, args []string) error {
+	//
+	//	log.Printf("starting ProjConf Server %s", pkg.Version)
+	//
+	//	ctx, cancel := context.WithCancel(c.Context())
+	//	defer cancel()
+	//	g, ctx := errgroup.WithContext(ctx)
+	//
+	//	if err := mustCleanStart(ctx); err != nil {
+	//		return fmt.Errorf("failed to clean-up dangling docker services: %v", err)
+	//	}
+	//
+	//	pgPass, err := keyring.Get("projconf", "postgres")
+	//	if err != nil {
+	//		if errors.Is(err, keyring.ErrNotFound) {
+	//			pgPass = utils.RandomString(32)
+	//			if err := keyring.Set("projconf", "postgres", pgPass); err != nil {
+	//				return fmt.Errorf("could not store postgres password: %v", err)
+	//			}
+	//		} else {
+	//			return fmt.Errorf("could not get postgres password from keyring: %v", err)
+	//		}
+	//	}
+	//
+	//	srvCfg := server.Config{
+	//		Host:        host,
+	//		Port:        port,
+	//		AdminAPIKey: adminApiKey,
+	//		AnonKey:     state.Get().AnonKey(),
+	//	}
+	//	srv, err := server.NewHTTPServer(&srvCfg)
+	//	if err != nil {
+	//		return fmt.Errorf("unable to initialize server: %v", err.Error())
+	//	}
+	//
+	//	// run the server
+	//	g.Go(func() error {
+	//		addr := fmt.Sprintf("%s:%d", srvCfg.Host, srvCfg.Port)
+	//		log.Printf("HTTP server listening on http://%s\t(admin access token: %s)\n", addr, adminApiKey)
+	//		if err := srv.Serve(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	//			return fmt.Errorf("http server error: %w", err)
+	//		}
+	//		return nil
+	//	})
+	//
+	//	// run required services
+	//	for _, service := range services.GetServices() {
+	//		g.Go(func() error {
+	//			err := docker.RunService(ctx, service, docker.Env{
+	//				PGPASSWORD:             pgPass,
+	//				JWT_SECRET:             state.Get().JwtSecret(),
+	//				PROJCONF_ADMIN_API_KEY: adminApiKey,
+	//				SUPABASE_PUBLIC_KEY:    state.Get().AnonKey(),
+	//			})
+	//			if errors.Is(err, context.Canceled) { // treat graceful cancellation as success.
+	//				return nil
+	//			}
+	//			return err
+	//		})
+	//
+	//		retries := 0
+	//		alive := false
+	//		for !alive {
+	//			a, code := service.HealthCheck(ctx)
+	//			if a {
+	//				alive = true
+	//				log.Printf("started %v", service.Display())
+	//				service.AfterStart()
+	//			} else {
+	//				if retries > 0 {
+	//					log.Printf("health check failed with code %d (retry=%d)", code, retries)
+	//				}
+	//				retries++
+	//				time.Sleep(time.Duration(math.Pow(2, float64(retries))) * time.Second)
+	//				if retries > 3 {
+	//					return fmt.Errorf("timed out waiting for health check")
+	//				}
+	//			}
+	//		}
+	//
+	//		if service.ContainerName() == consts.PostgresContainerName {
+	//
+	//			log.Println("applying migrations...")
+	//
+	//			// do migrations
+	//			conn, err := pgx.Connect(ctx, fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
+	//				"supabase_admin",
+	//				pgPass,
+	//				"127.0.0.1",
+	//				5432,
+	//				"postgres",
+	//			))
+	//			if err != nil {
+	//				return fmt.Errorf("could not connect to postgres: %v", err)
+	//			}
+	//
+	//			// apply migrations to build migrations_schema
+	//			if err := postgres.Execute(ctx, conn, migrations.MigrationsSchemaStatements); err != nil {
+	//				return errors.New(fmt.Sprintf("failed to apply migrations schema migrations: %s", err))
+	//			} else {
+	//				log.Printf("migrations schema migrated successfully")
+	//			}
+	//
+	//			existingMigrations, err := migrations.LoadSchemaMigrations(ctx, conn)
+	//			if err != nil {
+	//				return errors.New(fmt.Sprintf("failed to load existing schema migrations: %s", err.Error()))
+	//			}
+	//
+	//			m, _ := migrations.Get()
+	//			commands := make([]string, 0)
+	//			applied := 0
+	//			passed := 0
+	//			for _, migration := range m {
+	//
+	//				parts := strings.Split(migration.Name, "_")
+	//				version := parts[0]
+	//				name := strings.TrimSuffix(parts[1], ".sql")
+	//
+	//				alreadyApplied := false
+	//				for _, existingMigration := range existingMigrations {
+	//					if existingMigration.Version == version {
+	//						alreadyApplied = true
+	//						passed++
+	//					}
+	//				}
+	//
+	//				if !alreadyApplied {
+	//					applied++
+	//					commands = append(commands, string(migration.Data))
+	//					commands = append(commands, fmt.Sprintf("INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('%s', '%s')", version, name))
+	//				}
+	//			}
+	//			if err := postgres.Execute(ctx, conn, commands); err != nil {
+	//				return errors.New(fmt.Sprintf("failed to apply migrations: %s", err))
+	//			} else {
+	//				log.Printf("%v new migrations applied (%v already applied)", applied, passed)
+	//			}
+	//
+	//			conn.Close(ctx)
+	//		}
+	//	}
+	//
+	//	// gracefully shut the HTTP server down.
+	//	g.Go(func() error {
+	//		<-ctx.Done()
+	//		shutdownCtx, cancel := context.WithTimeout(c.Context(), 15*time.Second)
+	//		defer cancel()
+	//		_ = srv.Shutdown(shutdownCtx) // ignore error; the error path is returned by the server goroutine
+	//		return nil
+	//	})
+	//
+	//	// Wait for the first error; this also returns nil if everything ended cleanly.
+	//	return g.Wait()
+	//},
 }
 
 func init() {
@@ -286,6 +283,8 @@ func init() {
 	serveCmd.Flags().StringVar(&adminApiKey, AdminApiKeyFlag, "", "authentication token for an admin api client")
 	serveCmd.Flags().StringVarP(&host, "host", "H", defaultServerHost, "host to serve on")
 	serveCmd.Flags().Uint16VarP(&port, "port", "P", defaultServerPort, "port to serve on")
+	serveCmd.Flags().StringVarP(&logLevelStr, "log-level", "l", logLevelStr, "log level (default: warn; available: debug | info | warn | error | panic | fatal)")
+	serveCmd.Flags().BoolVar(&serve.LogJsonFmt, "log-json", serve.LogJsonFmt, "log json-formatted output (default: human-readable)")
 
 	rootCmd.AddCommand(serverCmd)
 }

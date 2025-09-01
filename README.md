@@ -11,6 +11,9 @@ A Supabase-powered project configuration utility.
 Install:
 
 ```shell
+# install dependencies
+apt install -y curl gnupg sudo 
+
 # Add PPA Signing Key
 # Check https://train360-corp.github.io/ppa/ for update instructions, if any
 curl -fsSL https://train360-corp.github.io/ppa/packages/KEY.gpg | sudo gpg --dearmor -o /usr/share/keyrings/train360-corp-keyring.gpg

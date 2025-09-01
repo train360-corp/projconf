@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/train360-corp/projconf/cmd"
-	"log"
+	"github.com/train360-corp/projconf/internal/commands/server/serve"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,6 +21,9 @@ import (
 )
 
 func main() {
+
+	serve.InitLogger()
+
 	ctx, shutdown := withGracefulSignals(context.Background(), 10*time.Second)
 	defer shutdown()
 
@@ -41,7 +44,7 @@ func withGracefulSignals(parent context.Context, grace time.Duration) (context.C
 
 	go func() {
 		<-sigCh // first signal
-		log.Printf("received interrupt — beginning graceful shutdown (%s grace)...", grace)
+		serve.Logger.Warn(fmt.Sprintf("received interrupt — beginning graceful shutdown (%s grace)...", grace))
 		cancel() // tell workers to stop
 
 		timer := time.NewTimer(grace)
@@ -49,11 +52,9 @@ func withGracefulSignals(parent context.Context, grace time.Duration) (context.C
 
 		select {
 		case <-timer.C:
-			log.Println("grace period elapsed — forcing exit.")
-			os.Exit(1)
+			serve.Logger.Fatal("grace period elapsed — forcing exit.")
 		case <-sigCh: // second real signal
-			log.Println("second interrupt — forcing exit.")
-			os.Exit(2)
+			serve.Logger.Fatal("second interrupt — forcing exit.")
 		}
 	}()
 
