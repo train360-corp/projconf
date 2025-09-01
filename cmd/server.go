@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	logLevelStr string = "warn"
+	logLevelStr string = "info"
 )
 
 var serverCmd = &cobra.Command{
