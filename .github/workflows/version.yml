@@ -76,6 +76,8 @@ jobs:
           path: ppa-repo
 
       - name: Ensure packages folder exists and copy Linux packages
+        env:
+          KEY: ${{ secrets.PPA_SIGNING_KEY }}
         run: |
           mkdir -p ppa-repo/packages
           packages=$(echo '${{ steps.extract.outputs.linux_packages }}' | jq -r '.[] | @base64')
