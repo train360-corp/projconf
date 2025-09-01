@@ -17,7 +17,6 @@ import (
 	"github.com/train360-corp/projconf/internal/utils"
 	"github.com/train360-corp/projconf/pkg/server/state"
 	"go.uber.org/zap"
-	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -179,17 +178,6 @@ ALTER USER supabase_storage_admin  WITH PASSWORD '%s';
 		serve.Logger.Info(fmt.Sprintf("successfully started postgrest (%v)", serve.PreviewString(id)))
 		state.Get().SetPostgrestAlive(true)
 	}
-
-	go func() {
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintln(w, "OK")
-		})
-
-		// Start server on port 8080
-		if err := http.ListenAndServe(":8080", nil); err != nil {
-			panic(err)
-		}
-	}()
 
 	// ---- block until ctx cancels, then shut everything down ----
 	select {
