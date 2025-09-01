@@ -18,15 +18,15 @@ import (
 	"time"
 )
 
-// previewString returns the first and last five characters of a string, separated by '...'
-func previewString(s string) string {
+// PreviewString returns the first and last five characters of a string, separated by '...'
+func PreviewString(s string) string {
 	if len(s) <= 10 {
 		return s
 	}
-	return fmt.Sprintf("%s...%s", s[:5], previewString(s[len(s)-5:]))
+	return fmt.Sprintf("%s...%s", s[:5], PreviewString(s[len(s)-5:]))
 }
 
-func waitPostgresReady(ctx context.Context, id string) error {
+func WaitPostgresReady(ctx context.Context, id string) error {
 	backoff := time.Second
 	for retries := 0; retries < 5; retries++ {
 		select {
@@ -34,7 +34,7 @@ func waitPostgresReady(ctx context.Context, id string) error {
 			return ctx.Err()
 		default:
 		}
-		out, err := exec(ctx, id, []string{"pg_isready"})
+		out, err := ExecInContainer(ctx, id, []string{"pg_isready"})
 		if err == nil && strings.Contains(out, "accepting connections") {
 			return nil
 		}
@@ -52,7 +52,7 @@ func waitPostgresReady(ctx context.Context, id string) error {
 	return fmt.Errorf("pg_isready did not succeed")
 }
 
-func waitHTTPReady(ctx context.Context, url string) error {
+func WaitHTTPReady(ctx context.Context, url string) error {
 	client := &http.Client{Timeout: 2 * time.Second}
 	backoff := time.Second
 	for retries := 0; retries < 5; retries++ {
@@ -83,9 +83,9 @@ func waitHTTPReady(ctx context.Context, url string) error {
 	return fmt.Errorf("http not ready: %s", url)
 }
 
-func migrate(ctx context.Context, pgContainerId string) error {
+func Migrate(ctx context.Context, pgContainerId string) error {
 
-	mustLogger()
+	MustLogger()
 
 	// apply migrations to build migrations_schema
 	sql := "BEGIN;\n"
@@ -93,7 +93,7 @@ func migrate(ctx context.Context, pgContainerId string) error {
 		sql += stmt + ";\n"
 	}
 	sql += "COMMIT;"
-	output, err := exec(ctx, pgContainerId, []string{
+	output, err := ExecInContainer(ctx, pgContainerId, []string{
 		"psql",
 		"-h", "127.0.0.1",
 		"-U", "supabase_admin",
@@ -102,9 +102,9 @@ func migrate(ctx context.Context, pgContainerId string) error {
 		"-c", sql,
 	})
 	if err != nil {
-		return fmt.Errorf("migrate migrations meta-schema failed (%v): %s", err, strings.ReplaceAll(strings.TrimSpace(output), "\n", "\\n"))
+		return fmt.Errorf("Migrate migrations meta-schema failed (%v): %s", err, strings.ReplaceAll(strings.TrimSpace(output), "\n", "\\n"))
 	}
-	Logger.Debug(fmt.Sprintf("migrate migrations meta-schema succeeded: %s", strings.ReplaceAll(strings.TrimSpace(output), "\n", "\\n")))
+	Logger.Debug(fmt.Sprintf("Migrate migrations meta-schema succeeded: %s", strings.ReplaceAll(strings.TrimSpace(output), "\n", "\\n")))
 
 	existingMigrations, err := loadSchemaMigrations(ctx, pgContainerId)
 	if err != nil {
@@ -140,7 +140,7 @@ func migrate(ctx context.Context, pgContainerId string) error {
 		sql += stmt + ";\n"
 	}
 	sql += "COMMIT;"
-	if output, err := exec(ctx, pgContainerId, []string{
+	if output, err := ExecInContainer(ctx, pgContainerId, []string{
 		"psql",
 		"-h", "127.0.0.1",
 		"-U", "supabase_admin",
@@ -152,7 +152,7 @@ func migrate(ctx context.Context, pgContainerId string) error {
 	} else {
 		Logger.Debug(fmt.Sprintf("apply migrations succeeded: %s", strings.ReplaceAll(strings.TrimSpace(output), "\n", "\\n")))
 	}
-	Logger.Info(fmt.Sprintf("%v new migrations applied (%v already applied)", applied, passed))
+	Logger.Debug(fmt.Sprintf("%v new migrations applied (%v already applied, %d total)", applied, passed, len(m)))
 
 	return nil
 }
@@ -173,7 +173,7 @@ func loadSchemaMigrations(ctx context.Context, containerID string) ([]SchemaMigr
       ) t;
     `
 
-	out, err := exec(ctx, containerID, []string{
+	out, err := ExecInContainer(ctx, containerID, []string{
 		"psql",
 		"-h", "127.0.0.1",
 		"-U", "supabase_admin",
@@ -183,7 +183,7 @@ func loadSchemaMigrations(ctx context.Context, containerID string) ([]SchemaMigr
 		"-c", sql,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("psql exec: %w (out=%s)", err, strings.TrimSpace(out))
+		return nil, fmt.Errorf("psql ExecInContainer: %w (out=%s)", err, strings.TrimSpace(out))
 	}
 
 	// out will be something like:

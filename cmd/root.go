@@ -17,6 +17,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/train360-corp/projconf/pkg"
 	"github.com/train360-corp/projconf/pkg/api"
+	"github.com/train360-corp/projconf/pkg/server"
+	"net/http"
 	URL "net/url"
 	"os"
 	"os/exec"
@@ -60,6 +62,11 @@ The CLI supports both hosting a ProjConf server instance (using the Supabase fra
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		env := os.Environ()
+
+		// server must have ready state
+		if err := isReady(); err != nil {
+			return err
+		}
 
 		client, _ := api.GetAPIClient(url, adminApiKey, clientSecretId, clientSecret)
 		if adminApiKey == "" {
@@ -195,5 +202,20 @@ func addAdminApiKeyFlag(cmd *cobra.Command) {
 }
 
 func addUrlFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&url, UrlFlag, fmt.Sprintf("http://%s:%d", defaultServerHost, defaultServerPort), "ProjConf API URL")
+	dflt := fmt.Sprintf("http://%s:%d", server.Host, server.Port)
+	cmd.Flags().StringVar(&url, UrlFlag, dflt, fmt.Sprintf("url of a ProjConf server (default: %s)", dflt))
+}
+
+func isReady() error {
+
+	response, err := http.Get(fmt.Sprintf("%s/v1/status/ready", strings.TrimSuffix(url, "/")))
+	if err != nil {
+		return fmt.Errorf("could not check status of remote server (is the url correct?): %v", err)
+	}
+
+	if response.StatusCode != 200 {
+		return fmt.Errorf("server not ready (returned status code %d)", response.StatusCode)
+	}
+
+	return nil
 }

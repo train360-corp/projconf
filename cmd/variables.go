@@ -34,6 +34,9 @@ var variablesCmd = &cobra.Command{
 	SilenceErrors: false,
 	Args:          cobra.NoArgs,
 	Short:         "Manage variables in a ProjConf server instance",
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		return isReady()
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},

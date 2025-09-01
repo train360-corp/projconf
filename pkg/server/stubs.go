@@ -41,11 +41,9 @@ func (s *RouteHandlers) GetStatusV1(c *gin.Context) {
 			Version: pkg.Version,
 		},
 		Services: struct {
-			Kong      bool `json:"kong"`
 			Postgres  bool `json:"postgres"`
 			Postgrest bool `json:"postgrest"`
 		}{
-			Kong:      state.IsKongAlive(),
 			Postgres:  state.IsPostgresAlive(),
 			Postgrest: state.IsPostgrestAlive(),
 		},

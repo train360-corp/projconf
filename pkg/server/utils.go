@@ -5,13 +5,6 @@
  * commercial license.
  */
 
-/*
- * Use of this software is governed by the Business Source License
- * included in the LICENSE file. Production use is permitted, but
- * offering this software as a managed service requires a separate
- * commercial license.
- */
-
 package server
 
 import (
@@ -47,7 +40,7 @@ func getSystemProjConfDir() (string, error) {
 // EnsureSystemProjConfDir creates the directory (and parents) if it doesn't exist.
 // Returns the path (same as getSystemProjConfDir).
 // On Unix, 0755 is a safe default for a shared system dir (adjust tighter if storing secrets).
-func EnsureSystemProjConfDir() (string, error) {
+func ensureSystemProjConfDir() (string, error) {
 	dir, err := getSystemProjConfDir()
 	if err != nil {
 		return "", err

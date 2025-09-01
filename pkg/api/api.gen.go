@@ -216,9 +216,6 @@ type Status struct {
 
 	// Services whether required services powering the server are online
 	Services struct {
-		// Kong whether kong is ready
-		Kong bool `json:"kong"`
-
 		// Postgres whether postgres is ready
 		Postgres bool `json:"postgres"`
 

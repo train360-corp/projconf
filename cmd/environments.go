@@ -26,6 +26,9 @@ var environmentsCmd = &cobra.Command{
 	SilenceErrors: false,
 	Args:          cobra.NoArgs,
 	Short:         "Manage environments in a ProjConf server instance",
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		return isReady()
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},

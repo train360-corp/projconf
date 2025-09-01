@@ -19,26 +19,26 @@ const (
 )
 
 var (
-	networkID string
+	NetworkID string
 )
 
-func initNetwork(ctx context.Context) error {
+func InitNetwork(ctx context.Context) error {
 
-	mustLogger()
-	mustCli()
+	MustLogger()
+	MustCli()
 
-	if networkID != "" { // network already initialized
-		Logger.Warn("initNetwork called with existing network (returning)")
+	if NetworkID != "" { // network already initialized
+		Logger.Warn("InitNetwork called with existing network (returning)")
 		return nil
 	}
 
-	nets, err := cli.NetworkList(ctx, network.ListOptions{
+	nets, err := Cli.NetworkList(ctx, network.ListOptions{
 		Filters: filters.NewArgs(filters.Arg("name", networkName)),
 	})
 	if err != nil { // cannot check networks
 		return err
 	} else if len(nets) == 1 { // network exists
-		networkID = nets[0].ID
+		NetworkID = nets[0].ID
 		Logger.Debug("found existing network (returning)")
 		return nil
 	} else if len(nets) > 1 { // catch-all
@@ -47,7 +47,7 @@ func initNetwork(ctx context.Context) error {
 
 	trueP := true
 	falseP := false
-	net, err := cli.NetworkCreate(ctx, networkName, network.CreateOptions{
+	net, err := Cli.NetworkCreate(ctx, networkName, network.CreateOptions{
 		Driver:     "bridge",
 		Scope:      "local",
 		EnableIPv4: &trueP,
@@ -57,14 +57,14 @@ func initNetwork(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	networkID = net.ID
+	NetworkID = net.ID
 	Logger.Debug("created network")
 
 	return nil
 }
 
-func mustNetwork() {
-	if networkID == "" {
+func MustNetwork() {
+	if NetworkID == "" {
 		panic("network not initialized")
 	}
 }

@@ -66,7 +66,7 @@ func InitLogger() {
 	}
 }
 
-func mustLogger() {
+func MustLogger() {
 	if Logger == nil {
 		panic("Logger not initialized")
 	}

@@ -23,14 +23,14 @@ import (
 	"time"
 )
 
-func runService(ctx context.Context, svc *types.Service, onExit func()) (string, func() error, error) {
+func RunService(ctx context.Context, svc *types.Service, onExit func()) (string, func() error, error) {
 
-	mustLogger()
-	mustCli()
-	mustNetwork()
+	MustLogger()
+	MustCli()
+	MustNetwork()
 
 	Logger.Debug(fmt.Sprintf("pulling image for %s (%s)", svc.Name, svc.Image))
-	pull, err := cli.ImagePull(ctx, svc.Image, image.PullOptions{})
+	pull, err := Cli.ImagePull(ctx, svc.Image, image.PullOptions{})
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to pull image for %s (%s): %v", svc.Name, svc.Image, err)
 	}
@@ -54,7 +54,7 @@ func runService(ctx context.Context, svc *types.Service, onExit func()) (string,
 	}
 
 	// create container
-	resp, err := cli.ContainerCreate(ctx,
+	resp, err := Cli.ContainerCreate(ctx,
 		&container.Config{
 			Image:        svc.Image,
 			Cmd:          svc.Cmd,
@@ -75,7 +75,7 @@ func runService(ctx context.Context, svc *types.Service, onExit func()) (string,
 		&network.NetworkingConfig{
 			EndpointsConfig: map[string]*network.EndpointSettings{
 				networkName: {
-					NetworkID: networkID,
+					NetworkID: NetworkID,
 					Aliases:   []string{}, // e.g., "db"
 				},
 			},
@@ -86,16 +86,16 @@ func runService(ctx context.Context, svc *types.Service, onExit func()) (string,
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create docker container: %v", err)
 	}
-	Logger.Debug(fmt.Sprintf("created docker container (%s)", previewString(resp.ID)))
+	Logger.Debug(fmt.Sprintf("created docker container (%s)", PreviewString(resp.ID)))
 
 	// start container
-	if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+	if err := Cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return "", nil, fmt.Errorf("failed to start docker container: %v", err)
 	}
-	Logger.Debug(fmt.Sprintf("started docker container (%s)", previewString(resp.ID)))
+	Logger.Debug(fmt.Sprintf("started docker container (%s)", PreviewString(resp.ID)))
 
 	// listen to status
-	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := Cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	go func() {
 		select {
 		case err := <-errCh:
@@ -109,13 +109,13 @@ func runService(ctx context.Context, svc *types.Service, onExit func()) (string,
 			}
 		case st := <-statusCh:
 			// container exited (possibly immediately)
-			Logger.Warn(fmt.Sprintf("docker container (%s) exited with status %d", previewString(resp.ID), st.StatusCode))
+			Logger.Warn(fmt.Sprintf("docker container (%s) exited with status %d", PreviewString(resp.ID), st.StatusCode))
 			onExit()
 		}
 	}()
 
 	// attach (stdin); keep this connection open while our app is alive.
-	att, err := cli.ContainerAttach(ctx, resp.ID, container.AttachOptions{
+	att, err := Cli.ContainerAttach(ctx, resp.ID, container.AttachOptions{
 		Stdin:  true,
 		Stream: true,
 		Stdout: false,
@@ -125,7 +125,7 @@ func runService(ctx context.Context, svc *types.Service, onExit func()) (string,
 		Logger.Error(fmt.Sprintf("attach failed, attempting to stop docker container"))
 		timeoutSeconds := 5
 		// use background context in case ctx is already stopped
-		if err := cli.ContainerStop(context.Background(), resp.ID, container.StopOptions{Timeout: &timeoutSeconds}); err != nil {
+		if err := Cli.ContainerStop(context.Background(), resp.ID, container.StopOptions{Timeout: &timeoutSeconds}); err != nil {
 			Logger.Error(fmt.Sprintf("failed to stop docker container: %v", err))
 		} else {
 			Logger.Info(fmt.Sprintf("successfully stopped docker container"))
@@ -144,7 +144,7 @@ func runService(ctx context.Context, svc *types.Service, onExit func()) (string,
 
 		// attempt to manually stop, too (use background context in case ctx is already stopped)
 		timeoutSeconds := 5
-		if err := cli.ContainerStop(context.Background(), resp.ID, container.StopOptions{Timeout: &timeoutSeconds}); err != nil {
+		if err := Cli.ContainerStop(context.Background(), resp.ID, container.StopOptions{Timeout: &timeoutSeconds}); err != nil {
 			return fmt.Errorf("failed to stop docker container: %v", err)
 		}
 
@@ -156,23 +156,23 @@ func runService(ctx context.Context, svc *types.Service, onExit func()) (string,
 	return resp.ID, stop, nil
 }
 
-// exec runs "cmd" inside container cid and streams output to stdout/stderr
-func exec(ctx context.Context, cid string, cmd []string) (string, error) {
-	// create exec instance
-	execResp, err := cli.ContainerExecCreate(ctx, cid, container.ExecOptions{
+// ExecInContainer runs "cmd" inside container cid and streams output to stdout/stderr
+func ExecInContainer(ctx context.Context, cid string, cmd []string) (string, error) {
+	// create ExecInContainer instance
+	execResp, err := Cli.ContainerExecCreate(ctx, cid, container.ExecOptions{
 		Cmd:          cmd,
 		AttachStdout: true,
 		AttachStderr: true,
 		Tty:          false,
 	})
 	if err != nil {
-		return "", fmt.Errorf("exec create failed: %w", err)
+		return "", fmt.Errorf("ExecInContainer create failed: %w", err)
 	}
 
 	// attach
-	att, err := cli.ContainerExecAttach(ctx, execResp.ID, container.ExecAttachOptions{Tty: false})
+	att, err := Cli.ContainerExecAttach(ctx, execResp.ID, container.ExecAttachOptions{Tty: false})
 	if err != nil {
-		return "", fmt.Errorf("exec attach failed: %w", err)
+		return "", fmt.Errorf("ExecInContainer attach failed: %w", err)
 	}
 	defer att.Close()
 
@@ -182,12 +182,12 @@ func exec(ctx context.Context, cid string, cmd []string) (string, error) {
 	output := buf.String()
 
 	// check exit code
-	inspect, err := cli.ContainerExecInspect(ctx, execResp.ID)
+	inspect, err := Cli.ContainerExecInspect(ctx, execResp.ID)
 	if err != nil {
-		return output, fmt.Errorf("exec inspect failed: %w", err)
+		return output, fmt.Errorf("ExecInContainer inspect failed: %w", err)
 	}
 	if inspect.ExitCode != 0 {
-		return output, fmt.Errorf("exec command exited with code %d", inspect.ExitCode)
+		return output, fmt.Errorf("ExecInContainer command exited with code %d", inspect.ExitCode)
 	}
 
 	return output, nil

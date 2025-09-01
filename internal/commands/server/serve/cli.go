@@ -13,9 +13,9 @@ import (
 	"github.com/docker/docker/client"
 )
 
-var cli *client.Client
+var Cli *client.Client
 
-func initCli(ctx context.Context) {
+func InitCli(ctx context.Context) {
 	c, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
@@ -23,12 +23,12 @@ func initCli(ctx context.Context) {
 	if err != nil {
 		Logger.Fatal(fmt.Sprintf("failed to create docker client: %v", err))
 	} else {
-		cli = c
+		Cli = c
 	}
-	Logger.Debug(fmt.Sprintf("Docker Host: %v", cli.DaemonHost()))
+	Logger.Debug(fmt.Sprintf("Docker Host: %v", Cli.DaemonHost()))
 
 	// Fast, cheap liveness probe
-	ping, err := cli.Ping(ctx)
+	ping, err := Cli.Ping(ctx)
 	if err != nil {
 		Logger.Fatal(fmt.Sprintf("docker daemon not reachable: %v", err))
 	} else {
@@ -45,8 +45,8 @@ func initCli(ctx context.Context) {
 	}
 }
 
-func mustCli() {
-	if cli == nil {
-		panic("cli not initialized")
+func MustCli() {
+	if Cli == nil {
+		panic("Cli not initialized")
 	}
 }

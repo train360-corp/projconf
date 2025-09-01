@@ -18,7 +18,6 @@ import (
 type State struct {
 	postgres  bool
 	postgrest bool
-	kong      bool
 	jwtSecret string
 	anonKey   string
 	mutex     sync.Mutex
@@ -47,7 +46,6 @@ func Get() *State {
 		state = &State{
 			postgres:  false,
 			postgrest: false,
-			kong:      false,
 			jwtSecret: jwtSecret,
 			anonKey:   pubKey,
 		}
@@ -58,7 +56,7 @@ func Get() *State {
 func (s *State) IsAlive() bool {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	return s.postgres && s.postgrest && s.kong
+	return s.postgres && s.postgrest
 }
 
 func (s *State) IsPostgresAlive() bool {
@@ -71,18 +69,6 @@ func (s *State) SetPostgresAlive(alive bool) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.postgres = alive
-}
-
-func (s *State) IsKongAlive() bool {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	return s.kong
-}
-
-func (s *State) SetKongAlive(alive bool) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	s.kong = alive
 }
 
 func (s *State) IsPostgrestAlive() bool {

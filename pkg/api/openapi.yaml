@@ -389,15 +389,11 @@ components:
               services:
                 type: object
                 description: whether required services powering the server are online
-                required: [ postgres, postgrest, kong ]
+                required: [ postgres, postgrest ]
                 properties:
                   postgres:
                     type: boolean
                     description: whether postgres is ready
-                    default: false
-                  kong:
-                    type: boolean
-                    description: whether kong is ready
                     default: false
                   postgrest:
                     type: boolean
