@@ -52,10 +52,15 @@ func EnsureSystemProjConfDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	perm := os.FileMode(0o755)
-	// On Windows the mode is largely ignored; still fine to pass.
+
+	perm := os.FileMode(0o755) // On Windows the mode is largely ignored; still fine to pass.
 	if err := os.MkdirAll(dir, perm); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create root directory %s: %v", dir, err)
 	}
+
+	if err := os.MkdirAll(filepath.Join(dir, "data"), perm); err != nil {
+		return "", fmt.Errorf("failed to create data directory %s: %v", dir, err)
+	}
+
 	return dir, nil
 }

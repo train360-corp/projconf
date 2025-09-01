@@ -50,7 +50,7 @@ func Service(req ServiceRequest) (*types.Service, error) {
 		},
 		mount.Mount{
 			Type:   mount.TypeBind,
-			Source: req.DbDataRoot,
+			Source: filepath.Join(req.DbDataRoot, "data"),
 			Target: "/var/lib/postgresql/data",
 		},
 	)
