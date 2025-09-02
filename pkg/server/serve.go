@@ -104,6 +104,22 @@ func Serve(c context.Context) {
 		}
 	}
 
+	gracefulShutdown := func() {
+		serve.Logger.Debug("attempting to shut down services cleanly")
+		stopAll()
+		serve.Logger.Debug("cancelling context")
+		cancel()
+	}
+
+	// catch any panic-s with graceful exit
+	defer func() {
+		if r := recover(); r != nil {
+			serve.Logger.Debug("Recovered from panic", zap.Any("reason", r))
+			gracefulShutdown()
+			serve.Logger.Fatal(fmt.Sprintf("%v", r))
+		}
+	}()
+
 	// start database
 	if pg, err := postgres.Service(postgres.ServiceRequest{
 		DbDataRoot:          dataDir,
@@ -112,29 +128,27 @@ func Serve(c context.Context) {
 		PostgresPassword:    pgPass,
 		JwtSecret:           state.Get().JwtSecret(),
 	}); err != nil {
-		serve.Logger.Fatal(fmt.Sprintf("failed to initialize postgres: %v", err))
+		serve.Logger.Panic(fmt.Sprintf("failed to initialize postgres: %v", err))
 	} else {
 		id, stop, err := serve.RunService(ctx, pg, func() {
 			state.Get().SetPostgresAlive(false)
 		})
 		if err != nil {
-			serve.Logger.Fatal(fmt.Sprintf("failed to run postgres: %v", err))
+			serve.Logger.Panic(fmt.Sprintf("failed to run postgres: %v", err))
 		} else {
 			addStop(stop)
 			serve.Logger.Debug("waiting for postgres ready status")
 
 			// wait for postgres to come alive
 			if err := serve.WaitPostgresReady(ctx, id); err != nil {
-				stopAll()
-				serve.Logger.Fatal(fmt.Sprintf("failed to wait for postgres ready: %v", err))
+				serve.Logger.Panic(fmt.Sprintf("failed to wait for postgres ready: %v", err))
 			}
 
 			// if this is the first start with a fresh data dir, cleanly exit
 			if isFirstStart {
 				serve.Logger.Warn("Detected first start (fresh data dir). Initialization complete; performing clean shutdown so you can restart normally.")
-				cancel()  // Cancel the runtime context so the HTTP server and any waiters can shut down
-				stopAll() // Stop any started containers/services (currently just Postgres)
-				return
+				gracefulShutdown()
+				os.Exit(0)
 			}
 
 			serve.Logger.Debug("patching postgres password")
@@ -162,8 +176,7 @@ ALTER USER supabase_storage_admin  WITH PASSWORD '%s';
 					pgPass, pgPass, pgPass, pgPass, pgPass, pgPass),
 			})
 			if err != nil {
-				stopAll()
-				serve.Logger.Fatal(fmt.Sprintf("failed to patch postgres password: %v (%s)", err, strings.ReplaceAll(strings.TrimSpace(output), "\n", "\\n")))
+				serve.Logger.Panic(fmt.Sprintf("failed to patch postgres password: %v (%s)", err, strings.ReplaceAll(strings.TrimSpace(output), "\n", "\\n")))
 			} else {
 				serve.Logger.Debug(fmt.Sprintf("postgres password patched: %s", strings.ReplaceAll(strings.TrimSpace(output), "\n", "\\n")))
 			}
@@ -172,7 +185,7 @@ ALTER USER supabase_storage_admin  WITH PASSWORD '%s';
 
 			serve.Logger.Debug("migrating postgres")
 			if err := serve.Migrate(ctx, id); err != nil {
-				serve.Logger.Fatal(fmt.Sprintf("failed to migrate postgres: %v", err))
+				serve.Logger.Panic(fmt.Sprintf("failed to migrate postgres: %v", err))
 			}
 			serve.Logger.Info(fmt.Sprintf("successfully migrated postgres (%v)", serve.PreviewString(id)))
 
@@ -186,13 +199,12 @@ ALTER USER supabase_storage_admin  WITH PASSWORD '%s';
 	}), func() {
 		state.Get().SetPostgrestAlive(false)
 	}); err != nil {
-		serve.Logger.Fatal(fmt.Sprintf("failed to initialize postgrest: %v", err))
+		serve.Logger.Panic(fmt.Sprintf("failed to initialize postgrest: %v", err))
 	} else {
 		addStop(stop)
 		serve.Logger.Debug("waiting for postgrest ready status")
 		if err := serve.WaitHTTPReady(ctx, "http://127.0.0.1:3001/ready"); err != nil {
-			stopAll()
-			serve.Logger.Fatal(fmt.Sprintf("failed to wait for postgrest ready: %v", err))
+			serve.Logger.Panic(fmt.Sprintf("failed to wait for postgrest ready: %v", err))
 		}
 
 		serve.Logger.Info(fmt.Sprintf("successfully started postgrest (%v)", serve.PreviewString(id)))
@@ -212,6 +224,5 @@ ALTER USER supabase_storage_admin  WITH PASSWORD '%s';
 	}
 
 	// stop containers (uses ContainerStop inside)
-	stopAll()
-
+	gracefulShutdown()
 }
