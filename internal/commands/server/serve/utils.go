@@ -233,7 +233,12 @@ func RemoveDanglingContainers(ctx context.Context) error {
 
 		// Remove it (force if necessary)
 		if err := Cli.ContainerRemove(ctx, c.ID, container.RemoveOptions{Force: true}); err != nil {
-			return fmt.Errorf("failed to remove container %s: %v", c.ID[:12], err)
+			if strings.Index(err.Error(), "is already in progress") != -1 {
+				Logger.Debug("container removal(s) already in progress (sleeping 5 seconds...)")
+				time.Sleep(5 * time.Second)
+			} else {
+				return fmt.Errorf("failed to remove container %s: %v", c.ID[:12], err)
+			}
 		} else {
 			Logger.Debug(fmt.Sprintf("removed stale container %s", c.ID[:12]))
 		}

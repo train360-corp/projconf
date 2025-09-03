@@ -116,7 +116,6 @@ func Serve(c context.Context) {
 		if r := recover(); r != nil {
 			serve.Logger.Debug("Recovered from panic", zap.Any("reason", r))
 			gracefulShutdown()
-			serve.Logger.Fatal(fmt.Sprintf("%v", r))
 		}
 	}()
 

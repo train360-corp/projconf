@@ -66,6 +66,7 @@ func RunService(ctx context.Context, svc *types.Service, onExit func()) (string,
 			StdinOnce:    true,  // when our stdin attach disconnects, close container's STDIN
 			Tty:          false, // keep streams multiplexed for stdcopy
 			ExposedPorts: exposedPorts,
+			Labels:       svc.Labels,
 		},
 		&container.HostConfig{
 			AutoRemove:    true, // like --rm
