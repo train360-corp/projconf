@@ -3,13 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -H 127.0.0.1 -p 3000",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "gen": "npm run gen:types",
+    "gen:types": "npm run gen:types:supabase",
+    "gen:types:supabase": "supabase gen types --local --lang=typescript > lib/supabase/types.gen.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
+    "@icons-pack/react-simple-icons": "^13.7.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -36,6 +40,9 @@
     "@radix-ui/react-toggle": "^1.1.10",
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@radix-ui/react-use-controllable-state": "^1.2.2",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.57.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -51,6 +58,7 @@
     "react-hook-form": "^7.62.0",
     "react-resizable-panels": "^3.0.5",
     "recharts": "^2.15.4",
+    "shiki": "^3.12.2",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
