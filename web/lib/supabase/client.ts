@@ -4,9 +4,9 @@ import { WithSupabaseEnv } from "@/lib/supabase/types";
 
 
 
-export function createClient({ supabase: { SUPABASE_URL, SUPABASE_PUBLISHABLE_OR_ANON_KEY, X_ADMIN_API_KEY } }: WithSupabaseEnv) {
+export function createClient({ supabase: { SUPABASE_FRONTEND_URL, SUPABASE_PUBLISHABLE_OR_ANON_KEY, X_ADMIN_API_KEY } }: WithSupabaseEnv) {
   return createBrowserClient<Database>(
-    SUPABASE_URL,
+    SUPABASE_FRONTEND_URL,
     SUPABASE_PUBLISHABLE_OR_ANON_KEY,
     {
       global: {

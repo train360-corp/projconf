@@ -30,7 +30,7 @@ export function AppSidebar(props: WithSupabaseEnv<{
 
   const [ projects, setProjects ] = useState<readonly Tables<"projects">[]>(props.initialProjects);
   const [ environments, setEnvironments ] = useState<readonly Tables<"environments">[] | undefined>(undefined);
-  const supabase = useMemo(() => createClient(props), [ props.supabase.SUPABASE_URL, props.supabase.SUPABASE_PUBLISHABLE_OR_ANON_KEY ]);
+  const supabase = useMemo(() => createClient(props), [ props.supabase.SUPABASE_FRONTEND_URL, props.supabase.SUPABASE_PUBLISHABLE_OR_ANON_KEY ]);
 
   useEffect(() => {
     setEnvironments(undefined); // trigger loading state immediately

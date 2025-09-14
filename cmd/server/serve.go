@@ -140,6 +140,10 @@ file accessible only by the current user.`,
 			version = "latest"
 		}
 		var projconfStudioPort uint16 = 3000
+		nodeDebug := ""
+		if logLevel == zapcore.DebugLevel {
+			nodeDebug = "undici"
+		}
 		projconf := &supago.Service{
 			Image: fmt.Sprintf("%s:%s", "ghcr.io/train360-corp/projconf", version),
 			Name:  "projconf-studio",
@@ -157,9 +161,11 @@ file accessible only by the current user.`,
 			},
 			Env: []string{
 				fmt.Sprintf("%s=%d", "PORT", projconfStudioPort),
-				fmt.Sprintf("%s=%s", "SUPABASE_URL", "http://docker.host.internal:8000"),
+				fmt.Sprintf("%s=%s", "SUPABASE_FRONTEND_URL", "http://127.0.0.1:8000"),
+				fmt.Sprintf("%s=%s", "SUPABASE_BACKEND_URL", cfg.Kong.URLs.Kong),
 				fmt.Sprintf("%s=%s", "SUPABASE_PUBLISHABLE_OR_ANON_KEY", cfg.Keys.PublicJwt),
 				fmt.Sprintf("%s=%s", "X_ADMIN_API_KEY", server.AdminApiKey),
+				fmt.Sprintf("%s=%s", "NODE_DEBUG", nodeDebug),
 			},
 		}
 
