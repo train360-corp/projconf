@@ -67,11 +67,10 @@ jobs:
   #     RELEASE DOCKER PACKAGE     #
   ###################################
   build-web:
-    name: Build (Web)
+    name: Web (Build)
     needs:
       - tag
       - version
-      - build
     strategy:
       fail-fast: false
       matrix:
@@ -126,6 +125,7 @@ jobs:
           retention-days: 1
 
   merge-web:
+    name: Web (Merge)
     needs:
      - build-web
      - version
