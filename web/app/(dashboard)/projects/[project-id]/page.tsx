@@ -1,12 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { FullPageError } from "@/components/error-handling/error";
 import ObjectPage from "@/components/object-page";
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { TableData } from "@/components/table-data";
 import { DialogCreateVariable } from "@/components/csr/dialog-create-variable";
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { getSupabase } from "@/lib/supabase/getSupabase";
 
 
 
@@ -38,7 +38,10 @@ export default async function Page(props: Readonly<{
         <div className={"flex flex-row justify-between items-center"}>
           <p className={"text-2xl font-bold"}>{"Variables"}</p>
 
-          <DialogCreateVariable>
+          <DialogCreateVariable
+            project={{ id: params["project-id"] }}
+            supabase={getSupabase()}
+          >
             <Button size={"sm"} variant="outline">{"Add Variable"}</Button>
           </DialogCreateVariable>
         </div>

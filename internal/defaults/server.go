@@ -5,10 +5,9 @@
  * commercial license.
  */
 
-package types
+package defaults
 
-type TempFile struct {
-	Name          string
-	ContainerPath string
-	Data          []byte
-}
+const (
+	ServerHost        = "127.0.0.1"
+	ServerPort uint16 = 8080
+)

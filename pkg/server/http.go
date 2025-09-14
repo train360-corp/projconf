@@ -13,9 +13,10 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	ginvalidator "github.com/oapi-codegen/gin-middleware"
-	"github.com/train360-corp/projconf/internal/commands/server/serve"
+	"github.com/train360-corp/projconf/internal/defaults"
 	"github.com/train360-corp/projconf/internal/utils/validators"
 	"github.com/train360-corp/projconf/pkg/api"
+	"go.uber.org/zap"
 	"net/http"
 	"sync"
 	"time"
@@ -23,8 +24,8 @@ import (
 
 var (
 	AdminApiKey string
-	Host        string = "127.0.0.1"
-	Port        uint16 = 8080
+	Host        = defaults.ServerHost
+	Port        = defaults.ServerPort
 
 	server *ProjConfServer
 	once   sync.Once
@@ -34,9 +35,10 @@ var (
 type ProjConfServer struct {
 	router *gin.Engine
 	http   *http.Server
+	logger *zap.SugaredLogger
 }
 
-func initHTTPServer() (err error) {
+func Init(logger *zap.SugaredLogger) (err error) {
 
 	mu.Lock()
 	defer mu.Unlock()
@@ -70,7 +72,14 @@ func initHTTPServer() (err error) {
 		// use route handlers
 		api.RegisterHandlers(router, GetServerInterface())
 
+		// configure logger
+		log := logger
+		if log == nil {
+			log = zap.NewNop().Sugar()
+		}
+
 		server = &ProjConfServer{
+			logger: log,
 			router: router,
 			http: &http.Server{
 				Addr:    fmt.Sprintf("%s:%d", Host, Port),
@@ -82,31 +91,39 @@ func initHTTPServer() (err error) {
 	return
 }
 
-func startHTTPServer(ctx context.Context) <-chan error {
+func Start(parentCtx context.Context) context.Context {
 
-	if server == nil {
-		serve.Logger.Fatal("server not initialized")
+	ctx, done := context.WithCancelCause(parentCtx)
+
+	if server == nil || server.http == nil || server.logger == nil {
+		panic("server not initialized")
 	}
 
-	errCh := make(chan error, 1)
+	// Run the HTTP server
 	go func() {
-		serve.Logger.Debug(fmt.Sprintf("preparing to start http serve on %s:%d", Host, Port))
-		if err := server.http.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			serve.Logger.Warn(fmt.Sprintf("http server shutdown: %v", err))
-			errCh <- err
-			return
+		server.logger.Infof("http server starting on %s:%d", Host, Port)
+		if err := server.http.ListenAndServe(); err != nil {
+			if errors.Is(err, http.ErrServerClosed) { // normal path when Shutdown() is invoked
+				server.logger.Warnf("http server closed")
+				done(nil)
+			} else { // unexpected error
+				server.logger.Warnf("http server exited with error: %v", err)
+				done(err)
+			}
+		} else { // ListenAndServe returned nil (rare), treat as normal stop
+			done(nil)
 		}
-		errCh <- nil
 	}()
 
-	// tie shutdown to ctx
+	// graceful shutdown only when the *parent* cancels
 	go func() {
-		<-ctx.Done()
+		<-parentCtx.Done()
 		shCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if err := server.http.Shutdown(shCtx); err != nil {
-			serve.Logger.Error(fmt.Sprintf("server shutdown error: %v", err))
+		if err := server.http.Shutdown(shCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			server.logger.Errorf("server shutdown error: %v", err)
 		}
 	}()
-	return errCh
+
+	return ctx
 }

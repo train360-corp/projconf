@@ -5,12 +5,19 @@
  * commercial license.
  */
 
-package utils
+/*
+ * Use of this software is governed by the Business Source License
+ * included in the LICENSE file. Production use is permitted, but
+ * offering this software as a managed service requires a separate
+ * commercial license.
+ */
+
+package random
 
 import "crypto/rand"
 
-// RandomString returns a secure random string of length n.
-func RandomString(n int) string {
+// String returns a secure random string of length n.
+func String(n int) string {
 	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	bytes := make([]byte, n)
 	if _, err := rand.Read(bytes); err != nil {

@@ -8,19 +8,14 @@
 package state
 
 import (
-	"fmt"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/train360-corp/projconf/internal/utils"
 	"sync"
-	"time"
 )
 
 type State struct {
 	postgres  bool
 	postgrest bool
-	jwtSecret string
-	anonKey   string
 	mutex     sync.Mutex
+	anonKey   string
 }
 
 var state *State
@@ -28,26 +23,9 @@ var once sync.Once
 
 func Get() *State {
 	once.Do(func() {
-
-		jwtSecret := utils.RandomString(32)
-		iat := time.Now().Unix()
-		exp := time.Now().AddDate(10, 0, 0).Unix()
-
-		pubKey, pubKeyErr := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims(map[string]any{
-			"role": "anon",
-			"iss":  "supabase",
-			"iat":  iat,
-			"exp":  exp,
-		})).SignedString([]byte(jwtSecret))
-		if pubKeyErr != nil {
-			panic(fmt.Sprintf("failed to generate runtime environment - public key error: %s", pubKeyErr.Error()))
-		}
-
 		state = &State{
 			postgres:  false,
 			postgrest: false,
-			jwtSecret: jwtSecret,
-			anonKey:   pubKey,
 		}
 	})
 	return state
@@ -83,10 +61,14 @@ func (s *State) SetPostgrestAlive(alive bool) {
 	s.postgrest = alive
 }
 
-func (s *State) JwtSecret() string {
-	return s.jwtSecret
+func (s *State) GetAnonymousKey() string {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.anonKey
 }
 
-func (s *State) AnonKey() string {
-	return s.anonKey
+func (s *State) SetAnonymousKey(key string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.anonKey = key
 }

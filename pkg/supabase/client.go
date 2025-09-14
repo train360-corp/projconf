@@ -24,7 +24,7 @@ func GetWithAuth(authConfig *AuthConfig) *Client {
 	client := &Client{
 		config: &Config{
 			Url:     "http://127.0.0.1:3000",
-			AnonKey: state.Get().AnonKey(),
+			AnonKey: state.Get().GetAnonymousKey(),
 		},
 		auth: authConfig,
 	}

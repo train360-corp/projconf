@@ -8,60 +8,19 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/train360-corp/projconf/cmd"
-	"github.com/train360-corp/projconf/internal/commands/server/serve"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func main() {
-
-	serve.InitLogger()
-
-	ctx, shutdown := withGracefulSignals(context.Background(), 10*time.Second)
-	defer shutdown()
-
-	if err := cmd.CLI().ExecuteContext(ctx); err != nil {
-		if errors.Is(ctx.Err(), context.Canceled) {
-			os.Exit(130) // conventional for SIGINT
+	err := cmd.ProjConf().Execute()
+	if err != nil {
+		if _, err := os.Stderr.WriteString(fmt.Sprintf("%v\n", color.RedString(err.Error()))); err != nil {
+			panic(err)
 		}
-		fmt.Fprintln(os.Stderr, color.RedString("error: %v", err))
 		os.Exit(1)
 	}
-}
-
-func withGracefulSignals(parent context.Context, grace time.Duration) (context.Context, func()) {
-	ctx, cancel := context.WithCancel(parent)
-
-	sigCh := make(chan os.Signal, 2)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		<-sigCh // first signal
-		serve.Logger.Warn(fmt.Sprintf("received interrupt — beginning graceful shutdown (%s grace)...", grace))
-		cancel() // tell workers to stop
-
-		timer := time.NewTimer(grace)
-		defer timer.Stop()
-
-		select {
-		case <-timer.C:
-			serve.Logger.Fatal("grace period elapsed — forcing exit.")
-		case <-sigCh: // second real signal
-			serve.Logger.Fatal("second interrupt — forcing exit.")
-		}
-	}()
-
-	// IMPORTANT: do NOT close(sigCh)
-	stop := func() {
-		signal.Stop(sigCh) // stop delivering to sigCh
-		cancel()
-	}
-	return ctx, stop
+	os.Exit(0)
 }

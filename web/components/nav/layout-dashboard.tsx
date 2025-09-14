@@ -4,6 +4,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/nav/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { ReactNode } from "react";
+import { getSupabase } from "@/lib/supabase/getSupabase";
 
 
 
@@ -35,11 +36,7 @@ export default async function LayoutDashboard({ projectId, children }: {
       <AppSidebar
         project={project ?? null}
         initialProjects={projects}
-        supabase={{
-          SUPABASE_URL: process.env.SUPABASE_URL,
-          SUPABASE_PUBLISHABLE_OR_ANON_KEY: process.env.SUPABASE_PUBLISHABLE_OR_ANON_KEY,
-          X_ADMIN_API_KEY: process.env.X_ADMIN_API_KEY,
-        }}
+        supabase={getSupabase()}
       />
       <SidebarInset>
         <header

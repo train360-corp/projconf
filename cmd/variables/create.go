@@ -5,83 +5,31 @@
  * commercial license.
  */
 
-package cmd
+package variables
 
 import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/train360-corp/projconf/internal/utils/tables"
+	"github.com/train360-corp/projconf/internal/flags"
 	"github.com/train360-corp/projconf/internal/utils/validators"
 	"github.com/train360-corp/projconf/pkg/api"
 	"strings"
 )
 
-var createVariableTypeStatic bool // static generator
-var createVariableStaticValue string
-var createVariableStaticValueEmpty bool
+var (
+	createVariableTypeStatic       bool // static generator
+	createVariableStaticValue      string
+	createVariableStaticValueEmpty bool
 
-var createVariableTypeRandom bool // random generator
-var createVariableRandomValueLength int
-var createVariableRandomValueUseNumbers, createVariableRandomValueUseLetters, createVariableRandomValueUseSymbols bool
-
-var variablesCmd = &cobra.Command{
-	Use:           "variables",
-	SilenceUsage:  false,
-	SilenceErrors: false,
-	Args:          cobra.NoArgs,
-	Short:         "Manage variables in a ProjConf server instance",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		return isReady()
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return cmd.Help()
-	},
-}
-
-var listVariablesCmd = &cobra.Command{
-	Use:           "list",
-	Aliases:       []string{"ls"},
-	SilenceUsage:  false,
-	SilenceErrors: false,
-	Args:          cobra.NoArgs,
-	Short:         "List variables in a ProjConf server instance",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		id, err := uuid.Parse(projectIdStr)
-		if err != nil {
-			return fmt.Errorf("\"%v\" is not a valid project id (%v)", projectIdStr, err)
-		}
-		projectId = id
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _ := api.GetAPIClient(url, adminApiKey, clientSecretId, clientSecret)
-		resp, err := client.GetVariablesV1WithResponse(cmd.Context(), projectId)
-		if err != nil {
-			return errors.New(fmt.Sprintf("request failed: %v", err.Error()))
-		}
-
-		if resp.JSON200 != nil {
-			if len(*resp.JSON200) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "no variables found")
-			} else {
-				fmt.Fprintln(cmd.OutOrStdout(), tables.Build[api.Variable](
-					*resp.JSON200,
-					tables.ColumnsByFieldNames[api.Variable]("Id", "Key", "GeneratorType", "GeneratorData"),
-					tables.WithTitle("Variables"),
-					tables.WithStyle(table.StyleLight),
-				))
-			}
-		} else {
-			return errors.New(api.GetAPIError(resp))
-		}
-
-		return nil
-	},
-}
+	createVariableTypeRandom            bool // random generator
+	createVariableRandomValueLength     int
+	createVariableRandomValueUseNumbers bool
+	createVariableRandomValueUseLetters bool
+	createVariableRandomValueUseSymbols bool
+)
 
 var createVariableCmd = &cobra.Command{
 	Use:           "create",
@@ -117,9 +65,9 @@ var createVariableCmd = &cobra.Command{
 
 		return nil
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(c *cobra.Command, args []string) error {
 
-		client, _ := api.GetAPIClient(url, adminApiKey, clientSecretId, clientSecret)
+		client, _ := api.FromFlags(authFlags)
 
 		req := api.CreateVariableV1JSONRequestBody{
 			Key: args[0],
@@ -153,7 +101,7 @@ var createVariableCmd = &cobra.Command{
 			return errors.New("an unexpected error occurred when choosing the variable type to generate")
 		}
 
-		resp, err := client.CreateVariableV1WithResponse(cmd.Context(), projectId, req)
+		resp, err := client.CreateVariableV1WithResponse(c.Context(), projectId, req)
 		if err != nil {
 			return fmt.Errorf("request failed: %v", err.Error())
 		}
@@ -172,7 +120,6 @@ var createVariableCmd = &cobra.Command{
 }
 
 func init() {
-
 	// random value generator
 	createVariableCmd.Flags().BoolVar(&createVariableTypeRandom, "random", false, "generate a random value")
 	createVariableCmd.Flags().BoolVar(&createVariableRandomValueUseLetters, "letters", false, "include letters in a random value")
@@ -190,18 +137,12 @@ func init() {
 	createVariableCmd.MarkFlagsOneRequired("random", "static")
 	createVariableCmd.MarkFlagsMutuallyExclusive("random", "static")
 
-	projectIdFlag := "project-id"
-	listVariablesCmd.Flags().StringVar(&projectIdStr, projectIdFlag, "", "the id of the project to list variables for")
-	listVariablesCmd.MarkFlagRequired(projectIdFlag)
+	createVariableCmd.Flags().StringVar(&projectIdStr, flags.ProjectIdFlag, "", "the id of the project to create the variable with")
+	err := createVariableCmd.MarkFlagRequired(flags.ProjectIdFlag)
+	if err != nil {
+		panic(err)
+	}
 
-	createVariableCmd.Flags().StringVar(&projectIdStr, projectIdFlag, "", "the id of the project to create the variable with")
-	createVariableCmd.MarkFlagRequired(projectIdFlag)
-
-	addAuthFlags(listVariablesCmd)
-	addAuthFlags(createVariableCmd)
-	variablesCmd.AddCommand(listVariablesCmd)
-	variablesCmd.AddCommand(createVariableCmd)
-	viper.BindPFlags(listVariablesCmd.Flags())
+	flags.SetupAuthFlags(createVariableCmd, authFlags)
 	viper.BindPFlags(createVariableCmd.Flags())
-	rootCmd.AddCommand(variablesCmd)
 }

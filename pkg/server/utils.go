@@ -9,9 +9,11 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // getSystemProjConfDir returns the system-wide config directory for ProjConf:
@@ -40,7 +42,10 @@ func getSystemProjConfDir() (string, error) {
 // EnsureSystemProjConfDir creates the directory (and parents) if it doesn't exist.
 // Returns the path (same as getSystemProjConfDir).
 // On Unix, 0755 is a safe default for a shared system dir (adjust tighter if storing secrets).
-func ensureSystemProjConfDir() (string, error) {
+//   - linux:   /etc/projconf
+//   - darwin:  /Library/Application Support/ProjConf
+//   - windows: %ProgramData%\ProjConf  (fallback: C:\ProgramData\ProjConf)
+func EnsureSystemProjConfDir() (string, error) {
 	dir, err := getSystemProjConfDir()
 	if err != nil {
 		return "", err
@@ -51,9 +56,20 @@ func ensureSystemProjConfDir() (string, error) {
 		return "", fmt.Errorf("failed to create root directory %s: %v", dir, err)
 	}
 
-	if err := os.MkdirAll(filepath.Join(dir, "data"), perm); err != nil {
-		return "", fmt.Errorf("failed to create data directory %s: %v", dir, err)
+	return dir, nil
+}
+
+// IsReady calls the status-check endpoint of a ProjConf host
+func IsReady(host string) error {
+
+	response, err := http.Get(fmt.Sprintf("%s/v1/status/ready", strings.TrimSuffix(host, "/")))
+	if err != nil {
+		return fmt.Errorf("could not check status of remote server (is the url correct?): %v", err)
 	}
 
-	return dir, nil
+	if response.StatusCode != 200 {
+		return fmt.Errorf("server not ready (returned status code %d)", response.StatusCode)
+	}
+
+	return nil
 }

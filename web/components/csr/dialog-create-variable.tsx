@@ -11,8 +11,18 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ReactNode, useState } from "react";
+import { Tables, TablesInsert } from "@/lib/supabase/types.gen";
+import { WithSupabaseEnv } from "@/lib/supabase/types";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 // ---- Schema ----
+const keySchema = z
+  .string()
+  .regex(/^[A-Z_][A-Z0-9_]*$/, {
+    message: "Must start with a capital letter/underscore and contain only A–Z, 0–9, _",
+  });
+
 const randomSchema = z
   .object({
     type: z.literal("RANDOM"),
@@ -31,53 +41,35 @@ const staticSchema = z.object({
   value: z.string().optional(), // no validation
 });
 
-const schema = z.discriminatedUnion("type", [ staticSchema, randomSchema ]);
+
+const schema = z
+  .object({
+    key: keySchema,
+  })
+  .and(z.discriminatedUnion("type", [staticSchema, randomSchema]));
+
 type FormValues = z.infer<typeof schema>;
 
-// ---- Props your app can use to receive the result ----
-type NewVariable =
-  | { type: "STATIC"; value?: string }
-  | { type: "RANDOM"; length: number; letters: boolean; numbers: boolean; symbols: boolean };
+export function DialogCreateVariable({ children, ...props }: WithSupabaseEnv<{
+  children: ReactNode;
+  project: Pick<Tables<"projects">, "id">
+}>) {
 
-export function DialogCreateVariable({
-                                    onCreateAction,
-                                    children,
-                                  }: {
-  onCreateAction?: (variable: NewVariable) => Promise<void> | void;
-  children: ReactNode; // usually a button you click to open the dialog
-}) {
-
-  const [open, setOpen] = useState(false);
+  const [ open, setOpen ] = useState(false);
 
   const form = useForm<FormValues>({
     // @ts-expect-error - types exist when flips to RANDOM
     resolver: zodResolver(schema),
     defaultValues: {
-      type: "STATIC",
-      // random defaults (used when type is RANDOM)
-      // @ts-expect-error – these fields exist when type flips to RANDOM
+      key: "",
+      type: "STATIC" as "STATIC" | "RANDOM",
+      value: "",
       length: 32,
       letters: true,
       numbers: true,
       symbols: false,
     },
   });
-
-  const onSubmit = async (values: FormValues) => {
-
-    if (onCreateAction) await onCreateAction(values as NewVariable);
-    setOpen(false);
-
-    // reset to defaults for next open
-    form.reset({
-      type: "STATIC",
-      // @ts-expect-error – see note above
-      length: 32,
-      letters: true,
-      numbers: true,
-      symbols: false,
-    });
-  };
 
   const type = form.watch("type");
 
@@ -91,9 +83,63 @@ export function DialogCreateVariable({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={form.handleSubmit(async (v) => {
+
+            const values = v as unknown as FormValues;
+
+            let genData: TablesInsert<"variables">["generator_data"];
+            switch (values.type) {
+              case "STATIC":
+                genData = values.value ?? "";
+                break;
+              case "RANDOM":
+                genData = {
+                  "length": values.length,
+                  "letters": values.letters,
+                  "numbers": values.numbers,
+                  "symbols": values.symbols
+                };
+                break;
+              default:
+                // @ts-expect-error - catch-all
+                throw new Error(`type unhandled: ${values.type}`);
+            }
+
+            const r = await createClient(props).from("variables").insert({
+              generator_type: values.type,
+              generator_data: genData,
+              key: values.key,
+              project_id: props.project.id,
+            }).select().single();
+
+            if(r.error) toast.error("Unable to Create Variable", {
+              description: r.error.message
+            });
+            else {
+              setOpen(false);
+              form.reset(); // reset to defaults for next open
+            }
+          })} className="space-y-5">
+
+            <FormField
+              // @ts-expect-error – see note above
+              control={form.control}
+              name="key"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Key</FormLabel>
+                  <FormControl>
+                    <Input placeholder="MY_VARIABLE" {...field} />
+                  </FormControl>
+                  <FormDescription>Must match ^[A-Z_][A-Z0-9_]*$</FormDescription>
+                  <FormMessage /> {/* will show regex / required errors */}
+                </FormItem>
+              )}
+            />
+
             {/* Type switch (Static | Random) */}
             <FormField
+              // @ts-expect-error – see note above
               control={form.control}
               name="type"
               render={({ field }) => (
@@ -116,6 +162,7 @@ export function DialogCreateVariable({
             {/* Static form */}
             {type === "STATIC" && (
               <FormField
+                // @ts-expect-error – see note above
                 control={form.control}
                 name="value" // only valid for STATIC branch
                 render={({ field }) => (
@@ -135,6 +182,7 @@ export function DialogCreateVariable({
             {type === "RANDOM" && (
               <div className="space-y-4">
                 <FormField
+                  // @ts-expect-error – see note above
                   control={form.control}
                   name="length"
                   render={({ field }) => (
@@ -150,6 +198,7 @@ export function DialogCreateVariable({
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <FormField
+                    // @ts-expect-error – see note above
                     control={form.control}
                     name="letters"
                     render={({ field }) => (
@@ -169,6 +218,7 @@ export function DialogCreateVariable({
                   />
 
                   <FormField
+                    // @ts-expect-error – see note above
                     control={form.control}
                     name="numbers"
                     render={({ field }) => (
@@ -188,6 +238,7 @@ export function DialogCreateVariable({
                   />
 
                   <FormField
+                    // @ts-expect-error – see note above
                     control={form.control}
                     name="symbols"
                     render={({ field }) => (
@@ -209,7 +260,8 @@ export function DialogCreateVariable({
 
                 {/* Show union-level error (e.g., "Select at least one") */}
                 <FormMessage>
-                  {form.formState.errors?.letters?.message as React.ReactNode}
+                  {/* @ts-expect-error – see note above*/}
+                  {form.formState.errors?.letters?.message as ReactNode}
                 </FormMessage>
               </div>
             )}
