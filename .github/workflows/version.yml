@@ -81,6 +81,10 @@ jobs:
             runs-on: ubuntu-24.04
     runs-on: ${{ matrix.config.runs-on }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # important so tags/history are available
+
       - name: Prepare
         run: |
           platform=${{ matrix.config.platform }}
