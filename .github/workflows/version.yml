@@ -113,6 +113,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           tags: ghcr.io/${{ github.repository }}
           outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Export digest
         run: |
