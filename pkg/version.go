@@ -7,4 +7,5 @@
 
 package pkg
 
+// Version app version (set by GoReleaser during build)
 var Version = ""

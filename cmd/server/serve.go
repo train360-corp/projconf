@@ -87,6 +87,7 @@ file accessible only by the current user.`,
 			logger.Debugf("system-wide data directory: %s", dir)
 		}
 
+		// create config
 		cfg, err := supago.NewRandomConfigE("projconf")
 		if err != nil {
 			logger.Panicf("unable to create config: %v", err)
