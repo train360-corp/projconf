@@ -10,10 +10,12 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 	"github.com/train360-corp/projconf/internal/flags"
 	"github.com/train360-corp/projconf/internal/utils/random"
+	"github.com/train360-corp/projconf/pkg"
 	"github.com/train360-corp/projconf/pkg/server"
 	"github.com/train360-corp/projconf/pkg/server/state"
 	"github.com/train360-corp/projconf/pkg/supabase/migrations"
@@ -23,6 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 )
 
 // serveCommand represents the serveCommand command
@@ -107,11 +110,12 @@ file accessible only by the current user.`,
 
 		// patch postgres after-start to handle migrations
 		postgres := supago.Services.Postgres(*cfg)
-		existingAfterStart := postgres.AfterStart
+		postgres.Cmd = append(postgres.Cmd, "-c", "projconf.x_admin_api_key="+server.AdminApiKey)
+		patchPgPass := postgres.AfterStart
 		postgres.AfterStart = func(ctx context.Context, docker *client.Client, containerID string) error {
 
 			// run hard-wired after-start
-			err := existingAfterStart(ctx, docker, containerID)
+			err := patchPgPass(ctx, docker, containerID)
 			if err != nil {
 				return err
 			}
@@ -131,12 +135,42 @@ file accessible only by the current user.`,
 			}
 		}
 
+		version := pkg.Version
+		if strings.HasPrefix(version, "0.0.0-SNAPSHOT-") {
+			version = "latest"
+		}
+		var projconfStudioPort uint16 = 3000
+		projconf := &supago.Service{
+			Image: fmt.Sprintf("%s:%s", "ghcr.io/train360-corp/projconf", version),
+			Name:  "projconf-studio",
+			Ports: []uint16{projconfStudioPort},
+			Healthcheck: &container.HealthConfig{
+				Test: []string{
+					"CMD",
+					"node",
+					"-e",
+					fmt.Sprintf("fetch('http://localhost:%d/api/v1/status/ready').then((r) => {if (r.status !== 200) throw new Error(r.status)})", projconfStudioPort),
+				},
+				Interval: 5 * time.Second,
+				Timeout:  10 * time.Second,
+				Retries:  3,
+			},
+			Env: []string{
+				fmt.Sprintf("%s=%d", "PORT", projconfStudioPort),
+				fmt.Sprintf("%s=%s", "SUPABASE_URL", "http://docker.host.internal:8000"),
+				fmt.Sprintf("%s=%s", "SUPABASE_PUBLISHABLE_OR_ANON_KEY", cfg.Keys.PublicJwt),
+				fmt.Sprintf("%s=%s", "X_ADMIN_API_KEY", server.AdminApiKey),
+			},
+		}
+
 		// run services
 		// - postgres/db
 		// - postgrest
 		sg.AddService(
 			postgres,
+			supago.Services.Kong(*cfg),
 			supago.Services.Postgrest(*cfg),
+			projconf,
 		)
 		if err := sg.RunForcefully(ctx); err != nil {
 			logger.Panicf("failed to initialize runner: %v", err)
