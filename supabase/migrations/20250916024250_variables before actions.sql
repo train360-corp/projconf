@@ -3,6 +3,7 @@ set check_function_bodies = off;
 CREATE OR REPLACE FUNCTION private.variables_before_actions()
  RETURNS trigger
  LANGUAGE plpgsql
+ SET SEARCH_PATH = ''
 AS $function$BEGIN
 
   IF TG_OP = 'INSERT' THEN
