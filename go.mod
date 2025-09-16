@@ -14,7 +14,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.7
 	github.com/spf13/viper v1.20.1
-	github.com/train360-corp/supago v1.2.3
+	github.com/train360-corp/supago v1.3.4
 	go.uber.org/zap v1.27.0
 )
 

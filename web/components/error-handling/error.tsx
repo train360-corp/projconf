@@ -15,9 +15,7 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   error: string;
-  description?: string;
-} | {
-  error: PostgrestError
+  details?: string | PostgrestError;
 }
 
 export const Error = ({ className, ...props }: Props & Pick<React.ComponentProps<"div">, "className">) => (
@@ -41,22 +39,28 @@ export const Error = ({ className, ...props }: Props & Pick<React.ComponentProps
           </CardAction>
         </CardHeader>
         <CardContent>
-          <p>{typeof props.error === "string" ? props.error : props.error.message}</p>
+          <p>{props.error}</p>
         </CardContent>
-        <CardFooter>
-          <Accordion className={"w-full"} type="single" collapsible>
-            <AccordionItem value={"details"}>
-              <AccordionTrigger>{"Details"}</AccordionTrigger>
-              <AccordionContent className={"flex flex-col"}>
-                {"description" in props ? props.description : (props.error as PostgrestError).details?.split("\n").map((str, i) => (
-                  <p key={i}>
-                    {str}
-                  </p>
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </CardFooter>
+        { props.details !== undefined ? (
+          <CardFooter>
+            <Accordion className={"w-full"} type="single" collapsible>
+              <AccordionItem value={"details"}>
+                <AccordionTrigger>{"Details"}</AccordionTrigger>
+                <AccordionContent className={"flex flex-col"}>
+                  { typeof props.details === "string" ? (
+                    <p>{props.details}</p>
+                  ) : props.details.details.split("\n").map((str, i) => (
+                    <p key={i}>
+                      {str}
+                    </p>
+                  ))}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardFooter>
+        ) : (
+          <CardFooter />
+        ) }
       </Card>
     </div>
 

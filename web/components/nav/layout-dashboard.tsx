@@ -19,7 +19,8 @@ export default async function LayoutDashboard({ projectId, children }: {
   const { data: projects, error: projectsError } = await supabase.from("projects").select();
   if (projectsError) return (
     <FullPageError
-      error={projectsError}
+      error={"Fail to Load Project(s)"}
+      details={projectsError}
     />
   );
 
@@ -27,7 +28,7 @@ export default async function LayoutDashboard({ projectId, children }: {
   if (!project && typeof projectId === "string") return (
     <FullPageError
       error={"Project not found"}
-      description={`A project with ID \"${projectId}\" was not found.`}
+      details={`A project with ID \"${projectId}\" was not found.`}
     />
   )
 

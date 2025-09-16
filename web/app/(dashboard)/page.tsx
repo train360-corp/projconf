@@ -13,7 +13,8 @@ export default async function Page() {
   const { data: projects, error: projectsError } = await supabase.from("projects").select();
   if (projectsError) return (
     <FullPageError
-      error={projectsError}
+      error={"Failed to Load Project(s)"}
+      details={projectsError}
     />
   );
 

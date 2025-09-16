@@ -19,13 +19,19 @@ export default async function Page(props: Readonly<{
     .single();
 
   if (environment.error) return (
-    <Error error={environment.error}/>
+    <Error
+      error={"Failed to Load Environment"}
+      details={environment.error}
+    />
   );
 
   const secrets = await supabase.from("secrets").select("*,variable:variables(*)")
     .eq("environment_id", environment.data.id);
   if (secrets.error) return (
-    <Error error={secrets.error}/>
+    <Error
+      error={"Failed to Load Secrets"}
+      details={secrets.error}
+    />
   );
 
   return (

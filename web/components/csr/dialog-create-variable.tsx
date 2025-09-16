@@ -52,7 +52,8 @@ type FormValues = z.infer<typeof schema>;
 
 export function DialogCreateVariable({ children, ...props }: WithSupabaseEnv<{
   children: ReactNode;
-  project: Pick<Tables<"projects">, "id">
+  project: Pick<Tables<"projects">, "id">;
+  onCreate: "RELOAD" | "CLOSE";
 }>) {
 
   const [ open, setOpen ] = useState(false);
@@ -116,8 +117,18 @@ export function DialogCreateVariable({ children, ...props }: WithSupabaseEnv<{
               description: r.error.message
             });
             else {
-              setOpen(false);
-              form.reset(); // reset to defaults for next open
+
+              switch (props.onCreate) {
+                case "RELOAD":
+                  window.location.reload();
+                  break;
+                case "CLOSE":
+                  setOpen(false);
+                  form.reset(); // reset to defaults for next open
+                  break;
+                default:
+                  throw new Error(`action unhandled: ${props.onCreate}`)
+              }
             }
           })} className="space-y-5">
 
@@ -169,7 +180,7 @@ export function DialogCreateVariable({ children, ...props }: WithSupabaseEnv<{
                   <FormItem>
                     <FormLabel>Value</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter static value…" {...field} />
+                      <Input disabled={form.formState.isSubmitting} placeholder="Enter static value…" {...field} />
                     </FormControl>
                     <FormDescription>No validation is applied for static values.</FormDescription>
                     <FormMessage/>
@@ -189,7 +200,7 @@ export function DialogCreateVariable({ children, ...props }: WithSupabaseEnv<{
                     <FormItem>
                       <FormLabel>Length</FormLabel>
                       <FormControl>
-                        <Input type="number" min={1} placeholder="32" {...field} />
+                        <Input disabled={form.formState.isSubmitting} type="number" min={1} placeholder="32" {...field} />
                       </FormControl>
                       <FormMessage/>
                     </FormItem>
@@ -205,6 +216,7 @@ export function DialogCreateVariable({ children, ...props }: WithSupabaseEnv<{
                       <FormItem className="flex items-center gap-3 space-y-0 rounded-md border p-3">
                         <FormControl>
                           <Checkbox
+                            disabled={form.formState.isSubmitting}
                             checked={field.value}
                             onCheckedChange={(v) => field.onChange(Boolean(v))}
                           />
@@ -225,6 +237,7 @@ export function DialogCreateVariable({ children, ...props }: WithSupabaseEnv<{
                       <FormItem className="flex items-center gap-3 space-y-0 rounded-md border p-3">
                         <FormControl>
                           <Checkbox
+                            disabled={form.formState.isSubmitting}
                             checked={field.value}
                             onCheckedChange={(v) => field.onChange(Boolean(v))}
                           />
@@ -245,6 +258,7 @@ export function DialogCreateVariable({ children, ...props }: WithSupabaseEnv<{
                       <FormItem className="flex items-center gap-3 space-y-0 rounded-md border p-3">
                         <FormControl>
                           <Checkbox
+                            disabled={form.formState.isSubmitting}
                             checked={field.value}
                             onCheckedChange={(v) => field.onChange(Boolean(v))}
                           />
@@ -267,7 +281,7 @@ export function DialogCreateVariable({ children, ...props }: WithSupabaseEnv<{
             )}
 
             <DialogFooter>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isValid}>
                 {form.formState.isSubmitting ? "Adding…" : "Add Variable"}
               </Button>
             </DialogFooter>

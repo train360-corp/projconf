@@ -77,7 +77,9 @@ file accessible only by the current user.`,
 		// catch panic's handling
 		defer func() {
 			if r := recover(); r != nil {
-				shutdown()
+				if logLevel != zapcore.DebugLevel {
+					shutdown()
+				}
 				logger.Fatalf("%v", r)
 			}
 		}()
@@ -96,8 +98,13 @@ file accessible only by the current user.`,
 			logger.Panicf("unable to create config: %v", err)
 		} else {
 			sg = supago.New(*cfg).SetLogger(logger)
-			cfg.Database.DataDirectory = filepath.Join(dir, "data", "postgres")
+
+			cfg.Database.DataDirectory = filepath.Join(dir, "postgres", "data")
 			logger.Debugf("database data directory: %s", cfg.Database.DataDirectory)
+
+			cfg.Database.ConfigDirectory = filepath.Join(dir, "postgres", "config")
+			logger.Debugf("database config directory: %s", cfg.Database.ConfigDirectory)
+
 			cfg.Global.DebugMode = logLevel == zapcore.DebugLevel
 		}
 

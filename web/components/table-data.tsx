@@ -64,21 +64,29 @@ export const TableData = async <T extends SupabaseTable>(props: Props<T>) => {
       </TableHeader>
       <TableBody>
 
-        {(rows.data ?? []).map((row, key) => (
-          <TableRow key={key}>
-            {Object.keys(props.columns).map((column, key) => {
-              const col = props.columns[column as keyof Columns<T>]!;
-              return (
-                <TableCell
-                  key={key}
-                  className={col.className as string | undefined}
-                >
-                  {col.formatter ? col.formatter(row[column as keyof Tables<T>]) : row[column as keyof Tables<T>] as string}
-                </TableCell>
-              );
-            })}
+        {(rows.data ?? []).length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={Object.keys(props.columns).length}>
+              <p className={"h-[50px] text-muted w-full text-center content-center"}>{"No data found"}</p>
+            </TableCell>
           </TableRow>
-        ))}
+        ) : (
+          (rows.data ?? []).map((row, key) => (
+            <TableRow key={key}>
+              {Object.keys(props.columns).map((column, key) => {
+                const col = props.columns[column as keyof Columns<T>]!;
+                return (
+                  <TableCell
+                    key={key}
+                    className={col.className as string | undefined}
+                  >
+                    {col.formatter ? col.formatter(row[column as keyof Tables<T>]) : row[column as keyof Tables<T>] as string}
+                  </TableCell>
+                );
+              })}
+            </TableRow>
+          ))
+        )}
       </TableBody>
     </Table>
   );

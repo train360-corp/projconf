@@ -23,7 +23,10 @@ export default async function Page(props: Readonly<{
     .single();
 
   if (project.error) return (
-    <FullPageError error={project.error}/>
+    <FullPageError
+      error={"Fail to Load Project"}
+      details={project.error}
+    />
   );
 
   return (
@@ -39,6 +42,7 @@ export default async function Page(props: Readonly<{
           <p className={"text-2xl font-bold"}>{"Variables"}</p>
 
           <DialogCreateVariable
+            onCreate={"RELOAD"}
             project={{ id: params["project-id"] }}
             supabase={getSupabase()}
           >
