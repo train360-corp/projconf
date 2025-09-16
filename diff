@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# join all args into a single string
+if [[ $# -eq 0 ]]; then
+  echo "Error: must supply at least one argument" >&2
+  exit 1
+fi
+
+name="$*"
+
+# validate: only letters, numbers, spaces
+if [[ ! "$name" =~ ^[A-Za-z0-9\ ._-]+$ ]]; then
+  echo "Error: invalid characters in name (only letters, numbers, spaces allowed)" >&2
+  exit 1
+fi
+
+supabase db diff \
+  -s public,private,extensions,vault \
+  -f "$name"
