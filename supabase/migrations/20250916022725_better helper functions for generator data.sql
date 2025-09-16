@@ -33,15 +33,10 @@ AS $function$SELECT extensions.jsonb_matches_schema(
           "secret-id": {
             "type": "string",
             "format": "uuid"
-          },
-          "secret": {
-            "type": "string",
-            "maxLength": 0
           }
         },
         "required": [
-          "secret-id",
-          "secret"
+          "secret-id"
         ],
         "additionalProperties": false
       }'::json,
