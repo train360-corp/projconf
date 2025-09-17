@@ -57,11 +57,10 @@ file accessible only by the current user.`,
 
 		var sg *supago.SupaGo
 
-		// Create a root ctx that is canceled on SIGINT/SIGTERM.
+		// root ctx that is canceled on SIGINT/SIGTERM.
 		ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 		defer stop()
 
-		// setup custom logger
 		logger := supago.NewOpinionatedLogger(logLevel, logJsonFmt)
 		defer logger.Sync()
 
@@ -74,7 +73,7 @@ file accessible only by the current user.`,
 			}
 		}
 
-		// catch panic's handling
+		// catch panic
 		defer func() {
 			if r := recover(); r != nil {
 				if logLevel != zapcore.DebugLevel {
@@ -87,26 +86,24 @@ file accessible only by the current user.`,
 		// get data directory
 		dir, err := server.EnsureSystemProjConfDir()
 		if err != nil {
-			logger.Panicf("unable to get system-wide data directory: %v", err)
+			panic(fmt.Sprintf("unable to get system-wide data directory: %v", err))
 		} else {
 			logger.Debugf("system-wide data directory: %s", dir)
 		}
 
 		// create config
-		cfg, err := supago.NewRandomConfigE("projconf")
+		cfg, err := supago.ConfigBuilder().
+			Platform("projconf").
+			GetEncryptionKeyUsing(supago.EncryptionKeyFromFile(filepath.Join(dir, "postgres", "encryption.key"))).
+			BuildE()
 		if err != nil {
-			logger.Panicf("unable to create config: %v", err)
-		} else {
-			sg = supago.New(*cfg).SetLogger(logger)
-
-			cfg.Database.DataDirectory = filepath.Join(dir, "postgres", "data")
-			logger.Debugf("database data directory: %s", cfg.Database.DataDirectory)
-
-			cfg.Database.ConfigDirectory = filepath.Join(dir, "postgres", "config")
-			logger.Debugf("database config directory: %s", cfg.Database.ConfigDirectory)
-
-			cfg.Global.DebugMode = logLevel == zapcore.DebugLevel
+			panic(fmt.Sprintf("unable to create config: %v", err))
 		}
+
+		// customize config
+		cfg.Global.DebugMode = logLevel == zapcore.DebugLevel
+		cfg.Database.DataDirectory = filepath.Join(dir, "postgres", "data")
+		logger.Debugf("database data directory: %s", cfg.Database.DataDirectory)
 
 		// init http server (early)
 		state.Get().SetAnonymousKey(cfg.Keys.PublicJwt)
@@ -176,15 +173,17 @@ file accessible only by the current user.`,
 			},
 		}
 
+		// init supago
+		sg = supago.New(cfg).
+			SetLogger(logger).
+			AddService(
+				postgres.Build(),
+				supago.Services.Kong,
+				supago.Services.Postgrest,
+				projconf.Build(),
+			)
+
 		// run services
-		// - postgres/db
-		// - postgrest
-		sg.AddService(
-			postgres,
-			supago.Services.Kong(*cfg),
-			supago.Services.Postgrest(*cfg),
-			projconf,
-		)
 		if err := sg.RunForcefully(ctx); err != nil {
 			logger.Panicf("failed to initialize runner: %v", err)
 		}
