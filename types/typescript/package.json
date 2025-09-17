@@ -1,0 +1,43 @@
+{
+  "name": "@train360-corp/projconf",
+  "version": "0.0.0",
+  "description": "An API Client for ProjConf",
+  "homepage": "https://github.com/train360-corp/projconf#readme",
+  "bugs": {
+    "url": "https://github.com/train360-corp/projconf/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/train360-corp/projconf.git"
+  },
+  "license": "MIT",
+  "author": "@train360-corp",
+  "type": "commonjs",
+  "main": "index.js",
+  "module": "index.mjs",
+  "types": "index.d.ts",
+  "files": [
+    "../../README.md",
+    "dist/*"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "npm run version && npm run gen && npm run compile",
+    "version": "jq --slurpfile ver ../../version.json '.version = $ver[0].version' package.json > package.json.tmp && mv package.json.tmp package.json",
+    "gen": "npx openapi-typescript ../../pkg/api/openapi.yaml -o schema.ts",
+    "compile": "tsup",
+    "test": "npm run test:ts",
+    "test:ts": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.9.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.14.0"
+  }
+}

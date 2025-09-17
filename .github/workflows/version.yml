@@ -63,6 +63,34 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_REPO_SECRET: ${{ secrets.HOMEBREW_TAP_REPO_SECRET }}
 
+  types-typescript:
+    name: Generate Types (TypeScript)
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq moreutils
+
+      - name: compile
+        run: npm ci && npm run test && npm run build
+        working-directory: ${{ github.workspace }}/types/typescript
+
+      - name: publish to npm
+        run: npm publish --access public
+        working-directory: ${{ github.workspace }}/types/typescript
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTOMATION_KEY }}
+
   ###################################
   #     RELEASE DOCKER PACKAGE     #
   ###################################
