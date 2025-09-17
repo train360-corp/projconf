@@ -26,7 +26,7 @@
     "compile": "tsup",
     "test": "npm run test:ts",
     "test:ts": "tsc --noEmit",
-    "prepublishOnly": "npm run build && cp ./package.json ./dist && cp ../../README.md ./dist && find . -mindepth 1 -path ./dist -prune -o -exec rm -rf -- {} + && mv ./dist/* . && rmdir dist"
+    "prepublishOnly": "rm -rf ./node_modules && cp ./package.json ./dist && cp ../../README.md ./dist && find . -mindepth 1 -path ./dist -prune -o -exec rm -rf -- {} + && mv ./dist/* . && rmdir dist"
   },
   "devDependencies": {
     "openapi-typescript": "^7.9.1",
