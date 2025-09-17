@@ -23,7 +23,7 @@ jobs:
           api-configs: |-
             [
               {
-                "openapi-json-filepath": "pkg/api/openapi.yaml",
+                "openapi-json-filepath": "go/pkg/api/openapi.yaml",
                 "api-doc-filepath": "latest/docs.html"
               }
             ]
