@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# directory of script
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+case "${1:-}" in
+  projconf)
+    exec "$DIR/scripts/projconf" "${@:2}"
+    ;;
+  diff)
+    exec "$DIR/scripts/diff" "${@:2}"
+    ;;
+  patch-supabase)
+    exec "$DIR/scripts/patch-supabase" "${@:2}"
+    ;;
+  *)
+    echo "Usage Unhandled: $0 ${1:-}" >&2
+    exit 1
+    ;;
+esac

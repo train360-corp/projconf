@@ -10,7 +10,7 @@ on:
       - main
     paths:
       - '.github/workflows/openapi.yml'
-      - 'pkg/api/openapi.yaml'
+      - '../../go/pkg/api/openapi.yaml'
 jobs:
   generate-api-docs:
     name: Generate API Documentation

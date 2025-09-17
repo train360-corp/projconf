@@ -22,7 +22,7 @@
   "scripts": {
     "build": "npm run version && npm run gen && npm run compile",
     "version": "jq --slurpfile ver ../../version.json '.version = $ver[0].version' package.json > package.json.tmp && mv package.json.tmp package.json",
-    "gen": "npx openapi-typescript ../../pkg/api/openapi.yaml -o schema.ts",
+    "gen": "npx openapi-typescript ../../go/pkg/api/openapi.yaml -o schema.ts",
     "compile": "tsup",
     "test": "npm run test:ts",
     "test:ts": "tsc --noEmit",
@@ -34,6 +34,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@train360-corp/projconf": "^1.4.4",
     "openapi-fetch": "^0.14.0"
   }
 }

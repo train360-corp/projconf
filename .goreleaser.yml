@@ -7,7 +7,7 @@ before:
     - go mod tidy
     - go get github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
     - go get github.com/oapi-codegen/runtime@v1.1.2
-    - go generate ./pkg/supabase/migrations
+    - go generate ./go/pkg/supabase/migrations
 
 changelog:
   use: github
@@ -24,6 +24,7 @@ changelog:
 builds:
   - id: projconf
     binary: projconf
+    dir: ./go
     env:
       - CGO_ENABLED=0
     goos:

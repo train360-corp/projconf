@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# directory of script
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NO_BUILD=0
+ARGS=()
+
+for arg in "$@"; do
+  case "$arg" in
+    --no-build)
+      NO_BUILD=1
+      ;; # skip adding it to ARGS
+    *)
+      ARGS+=("$arg")
+      ;;
+  esac
+done
+
+if [[ $NO_BUILD -eq 0 ]]; then
+  rm -rf "$DIR/../dist"
+  rm -rf "$DIR/../go/pkg/supabase/migrations/embedded/*.sql"
+  goreleaser release --clean --skip=validate --snapshot
+fi
+
+clear
+
+#echo "==> Running projconf..."
+exec "$DIR/../dist/projconf_darwin_arm64_v8.0/projconf" "${ARGS[@]}"
