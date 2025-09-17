@@ -65,7 +65,7 @@ jobs:
 
   types-typescript:
     name: Generate Types (TypeScript)
-    needs: build
+    needs: version
     runs-on: ubuntu-24.04
     steps:
 
