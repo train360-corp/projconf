@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/train360-corp/projconf/go/internal/flags"
 	"github.com/train360-corp/projconf/go/internal/utils/tables"
-	api2 "github.com/train360-corp/projconf/go/pkg/api"
+	"github.com/train360-corp/projconf/go/pkg/api"
 )
 
 var listClientsCmd = &cobra.Command{
@@ -36,7 +36,7 @@ var listClientsCmd = &cobra.Command{
 	},
 	RunE: func(c *cobra.Command, args []string) error {
 
-		client, _ := api2.FromFlags(authFlags)
+		client, _ := api.FromFlags(authFlags)
 		resp, err := client.GetClientsV1WithResponse(c.Context(), environmentId)
 		if err != nil {
 			return errors.New(fmt.Sprintf("request failed: %v", err.Error()))
@@ -48,13 +48,13 @@ var listClientsCmd = &cobra.Command{
 			} else {
 				fmt.Fprintln(c.OutOrStdout(), tables.Build(
 					*resp.JSON200,
-					tables.ColumnsByFieldNames[api2.ClientRepresentation]("Id", "Display", "CreatedAt"),
+					tables.ColumnsByFieldNames[api.ClientObject]("Id", "Display", "CreatedAt"),
 					tables.WithTitle("Clients"),
 					tables.WithStyle(table.StyleLight),
 				))
 			}
 		} else {
-			return errors.New(api2.GetAPIError(resp))
+			return errors.New(api.GetAPIError(resp))
 		}
 
 		return nil

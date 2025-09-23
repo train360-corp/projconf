@@ -22,7 +22,7 @@ import (
 	"github.com/train360-corp/projconf/go/cmd/variables"
 	"github.com/train360-corp/projconf/go/internal/flags"
 	"github.com/train360-corp/projconf/go/pkg"
-	api2 "github.com/train360-corp/projconf/go/pkg/api"
+	"github.com/train360-corp/projconf/go/pkg/api"
 	"github.com/train360-corp/projconf/go/pkg/server"
 	URL "net/url"
 	"os"
@@ -93,12 +93,12 @@ var run = func(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	client, _ := api2.FromFlags(authFlags)
+	client, _ := api.FromFlags(authFlags)
 	if authFlags.AdminApiKey == "" {
 		if resp, err := client.GetClientSecretsV1WithResponse(cmd.Context()); err != nil {
 			return fmt.Errorf("could not get client secrets: %v", err)
 		} else if resp.JSON200 == nil {
-			return fmt.Errorf("could not get client secrets: %v", api2.GetAPIError(resp))
+			return fmt.Errorf("could not get client secrets: %v", api.GetAPIError(resp))
 		} else if len(*resp.JSON200) == 0 {
 			fmt.Fprintln(cmd.OutOrStdout(), color.YellowString("WARN: no secrets found"))
 		} else {
@@ -114,7 +114,7 @@ var run = func(cmd *cobra.Command, args []string) error {
 		if resp, err := client.GetEnvironmentSecretsV1WithResponse(cmd.Context(), envId); err != nil {
 			return fmt.Errorf("could not get client secrets: %v", err)
 		} else if resp.JSON200 == nil {
-			return fmt.Errorf("could not get client secrets: %v", api2.GetAPIError(resp))
+			return fmt.Errorf("could not get client secrets: %v", api.GetAPIError(resp))
 		} else if len(*resp.JSON200) == 0 {
 			fmt.Fprintln(cmd.OutOrStdout(), color.YellowString("WARN: no secrets found"))
 		} else {

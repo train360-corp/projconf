@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/train360-corp/projconf/go/internal/flags"
 	"github.com/train360-corp/projconf/go/internal/utils/tables"
-	api2 "github.com/train360-corp/projconf/go/pkg/api"
+	"github.com/train360-corp/projconf/go/pkg/api"
 )
 
 var listVariablesCmd = &cobra.Command{
@@ -35,7 +35,7 @@ var listVariablesCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(c *cobra.Command, args []string) error {
-		client, _ := api2.FromFlags(authFlags)
+		client, _ := api.FromFlags(authFlags)
 		resp, err := client.GetVariablesV1WithResponse(c.Context(), projectId)
 		if err != nil {
 			return errors.New(fmt.Sprintf("request failed: %v", err.Error()))
@@ -45,15 +45,15 @@ var listVariablesCmd = &cobra.Command{
 			if len(*resp.JSON200) == 0 {
 				fmt.Fprintln(c.OutOrStdout(), "no variables found")
 			} else {
-				fmt.Fprintln(c.OutOrStdout(), tables.Build[api2.Variable](
+				fmt.Fprintln(c.OutOrStdout(), tables.Build[api.VariableObject](
 					*resp.JSON200,
-					tables.ColumnsByFieldNames[api2.Variable]("Id", "Key", "GeneratorType", "GeneratorData"),
+					tables.ColumnsByFieldNames[api.VariableObject]("Id", "Key", "GeneratorType", "GeneratorData"),
 					tables.WithTitle("Variables"),
 					tables.WithStyle(table.StyleLight),
 				))
 			}
 		} else {
-			return errors.New(api2.GetAPIError(resp))
+			return errors.New(api.GetAPIError(resp))
 		}
 
 		return nil

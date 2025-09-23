@@ -16,9 +16,9 @@ import (
 	"github.com/train360-corp/projconf/go/internal/flags"
 	"github.com/train360-corp/projconf/go/internal/utils/random"
 	"github.com/train360-corp/projconf/go/pkg"
-	server2 "github.com/train360-corp/projconf/go/pkg/server"
+	"github.com/train360-corp/projconf/go/pkg/migrations"
+	"github.com/train360-corp/projconf/go/pkg/server"
 	"github.com/train360-corp/projconf/go/pkg/server/state"
-	"github.com/train360-corp/projconf/go/pkg/supabase/migrations"
 	"github.com/train360-corp/supago"
 	"go.uber.org/zap/zapcore"
 	"os/signal"
@@ -44,8 +44,8 @@ Default values will be created and stored in a local
 file accessible only by the current user.`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 
-		if strings.TrimSpace(server2.AdminApiKey) == "" {
-			server2.AdminApiKey = random.String(32)
+		if strings.TrimSpace(server.AdminApiKey) == "" {
+			server.AdminApiKey = random.String(32)
 		}
 
 		if level, err := zapcore.ParseLevel(logLevelStr); err != nil {
@@ -86,7 +86,7 @@ file accessible only by the current user.`,
 		}()
 
 		// get data directory
-		dir, err := server2.EnsureSystemProjConfDir()
+		dir, err := server.EnsureSystemProjConfDir()
 		if err != nil {
 			panic(fmt.Sprintf("unable to get system-wide data directory: %v", err))
 		} else {
@@ -109,14 +109,15 @@ file accessible only by the current user.`,
 
 		// init http server (early)
 		state.Get().SetAnonymousKey(cfg.Keys.PublicJwt)
-		if err := server2.Init(logger); err != nil {
+		if err := server.Init(logger, cfg); err != nil {
 			logger.Panicf("failed to initialize server: %v", err)
 		}
-		srv := server2.Start(ctx)
+		srv := server.Start(ctx)
+		logger.Infof("admin api key: %s", server.AdminApiKey)
 
 		// patch postgres after-start to handle migrations
 		postgres := supago.Services.Postgres(*cfg)
-		postgres.Cmd = append(postgres.Cmd, "-c", "projconf.x_admin_api_key="+server2.AdminApiKey)
+		postgres.Cmd = append(postgres.Cmd, "-c", "projconf.x_admin_api_key="+server.AdminApiKey)
 		patchPgPass := postgres.AfterStart
 		postgres.AfterStart = func(ctx context.Context, docker *client.Client, containerID string) error {
 
@@ -183,7 +184,7 @@ file accessible only by the current user.`,
 					fmt.Sprintf("%s=%s", "SUPABASE_FRONTEND_URL", "http://127.0.0.1:8000"),
 					fmt.Sprintf("%s=%s", "SUPABASE_BACKEND_URL", cfg.Kong.URLs.Kong),
 					fmt.Sprintf("%s=%s", "SUPABASE_PUBLISHABLE_OR_ANON_KEY", cfg.Keys.PublicJwt),
-					fmt.Sprintf("%s=%s", "X_ADMIN_API_KEY", server2.AdminApiKey),
+					fmt.Sprintf("%s=%s", "X_ADMIN_API_KEY", server.AdminApiKey),
 					fmt.Sprintf("%s=%s", "NODE_DEBUG", nodeDebug),
 				},
 			}.Build())
@@ -212,9 +213,9 @@ func init() {
 	serveCommand.Flags().BoolVarP(&withStudio, "with-studio", "S", withStudio, "start the ProjConf web interface")
 
 	// connection flags
-	flags.SetupAdminApiKeyFlag(serveCommand, &server2.AdminApiKey)
-	serveCommand.Flags().StringVarP(&server2.Host, "host", "H", server2.Host, fmt.Sprintf("host to serveCommand on (default: %s)", server2.Host))
-	serveCommand.Flags().Uint16VarP(&server2.Port, "port", "P", server2.Port, fmt.Sprintf("port to serveCommand on (default: %d)", server2.Port))
+	flags.SetupAdminApiKeyFlag(serveCommand, &server.AdminApiKey)
+	serveCommand.Flags().StringVarP(&server.Host, "host", "H", server.Host, fmt.Sprintf("host to serveCommand on (default: %s)", server.Host))
+	serveCommand.Flags().Uint16VarP(&server.Port, "port", "P", server.Port, fmt.Sprintf("port to serveCommand on (default: %d)", server.Port))
 
 	// logging flags
 	serveCommand.Flags().StringVarP(&logLevelStr, "log-level", "l", logLevelStr, "log level (default: warn; available: debug | info | warn | error | panic | fatal)")

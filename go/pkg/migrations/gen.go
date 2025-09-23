@@ -5,7 +5,7 @@
  * commercial license.
  */
 
-//go:generate bash -c "cp ../../../../supabase/migrations/*.sql ./embedded"
+//go:generate bash -c "cp ../../../supabase/migrations/*.sql ./embedded"
 package migrations
 
 import (

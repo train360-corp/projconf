@@ -1,16 +1,34 @@
 openapi: 3.0.0
 info:
-  title: Secrets API
+  title: ProjConf API
   version: 1.0.0
+  description: REST-ful API for interacting with a ProjConf server-instance
+
 tags:
-  - name: admin
-    description: admin API endpoints
-  - name: client
-    description: client API endpoints
+  - name: health
+    description: status-check endpoints
+
+  - name: clients
+    description: endpoints to manage API `Client` objects
+
+  - name: projects
+    description: endpoints to manage `Project` objects
+
+  - name: environments
+    description: endpoints to manage `Environment` objects
+
+  - name: variables
+    description: endpoints to manage `Variable` objects
+
 paths:
+
+  ############################
+  #          HEALTH          #
+  ############################
 
   /v1/status:
     get:
+      tags: [ health ]
       operationId: getStatusV1
       summary: Get status
       description: Returns a health-check on the server (even if not ready; available as soon as server starts)
@@ -20,6 +38,7 @@ paths:
 
   /v1/status/ready:
     get:
+      tags: [ health ]
       operationId: getStatusReadyV1
       summary: Get readiness status
       description: Returns a readiness health-check on the server
@@ -27,10 +46,13 @@ paths:
         '200': { $ref: '#/components/responses/Ready' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
+  #############################
+  #          CLIENTS          #
+  #############################
+
   /v1/clients/_self:
     get:
-      tags:
-        - client
+      tags: [ clients ]
       summary: Get self
       description: Returns the client object for the currently-authenticated client.
       responses:
@@ -39,7 +61,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientRepresentation'
+                $ref: '#/components/schemas/ClientObject'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -48,8 +70,7 @@ paths:
   /v1/clients/secrets:
     get:
       operationId: getClientSecretsV1
-      tags:
-        - client
+      tags: [ clients ]
       summary: Get secrets
       description: Returns the secrets accessible by the currently-authenticated client.
       responses:
@@ -64,12 +85,14 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  ##############################
+  #          PROJECTS          #
+  ##############################
+
   /v1/projects:
     get:
       operationId: getProjectsV1
-      tags:
-        - client
-        - admin
+      tags: [ projects ]
       summary: List projects
       description: Returns all projects accessible by the client
       responses:
@@ -82,8 +105,7 @@ paths:
         '500': { $ref: '#/components/responses/InternalServerError' }
     post:
       operationId: createProjectV1
-      tags:
-        - admin
+      tags: [ projects ]
       summary: Create project
       description: Create a new project
       requestBody:
@@ -97,37 +119,69 @@ paths:
                   type: string
                   description: project name (must be unique)
                   pattern: ^[[:alnum:] _]+$
+                  example: Shiny New MVP
                   minLength: 1
-              required:
-                - name
+              required: [ name ]
       responses:
-        '201':
-          description: Project Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ID'
+        '201': { $ref: '#/components/responses/IDResponse' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
+  /v1/projects/{project_id}:
+    get:
+      operationId: getProjectV1
+      tags: [ projects ]
+      summary: Get Project
+      description: Get a project by its ID
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/ID' }
+      responses:
+        '200':
+          description: the Project object matching `project_id`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectObject"
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    delete:
+      operationId: deleteProjectV1
+      tags: [ projects ]
+      summary: Delete Project
+      description: Delete a project by its ID
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/ID' }
+      responses:
+        '200': { $ref: '#/components/responses/SuccessResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  ##################################
+  #          ENVIRONMENTS          #
+  ##################################
+
   /v1/projects/{project_id}/environments:
     get:
       operationId: getEnvironmentsV1
-      tags:
-        - client
-        - admin
+      tags: [ environments ]
       summary: List environments
       description: Returns all environments for a given project.
       parameters:
         - name: project_id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
-          description: The UUID of the project.
+          schema: { $ref: '#/components/schemas/ID' }
       responses:
         '200':
           description: A list of environments.
@@ -141,18 +195,14 @@ paths:
         '500': { $ref: '#/components/responses/InternalServerError' }
     post:
       operationId: createEnvironmentV1
-      tags:
-        - admin
+      tags: [ environments ]
       summary: Create environment
       description: Create a new environment
       parameters:
         - name: project_id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
-          description: The UUID of the project.
+          schema: { $ref: '#/components/schemas/ID' }
       requestBody:
         required: true
         content:
@@ -162,93 +212,68 @@ paths:
               properties:
                 name:
                   type: string
-                  description: project name (must be unique)
+                  description: environment name (must be unique)
                   pattern: ^[[:alnum:] _]+$
                   minLength: 1
+                  example: Prod
               required:
                 - name
       responses:
-        '201':
-          description: Environment Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ID'
+        '201': { $ref: '#/components/responses/IDResponse' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
-  /v1/projects/{project_id}/variables:
+  /v1/environments/{environment_id}:
     get:
-      operationId: getVariablesV1
-      tags:
-        - client
-        - admin
-      summary: Get varibales
-      description: Get all variables in a project
+      operationId: getEnvironmentV1
+      tags: [ environments ]
+      summary: Get Environment
+      description: Get an environment by its ID
       parameters:
-        - name: project_id
+        - name: environment_id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
-          description: The UUID of the project.
+          schema: { $ref: '#/components/schemas/ID' }
       responses:
         '200':
-          description: A list of variables.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Variables"
+          description: the Environment object matching `id`
+          content: { application/json: { schema: { $ref: "#/components/schemas/EnvironmentObject" } } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
-    post:
-      operationId: createVariableV1
-      tags:
-        - admin
-      summary: Create variable
-      description: Create a new variable in a project
+    delete:
+      operationId: deleteEnvironmentV1
+      tags: [ environments ]
+      summary: Delete Environment
+      description: Delete an environment by its ID
       parameters:
-        - name: project_id
+        - name: environment_id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
-          description: The UUID of the project.
-      requestBody:
-        $ref: '#/components/requestBodies/CreateVariableRequestBody'
+          schema: { $ref: '#/components/schemas/ID' }
       responses:
-        '201':
-          description: Variable Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ID'
-        '400': { $ref: '#/components/responses/BadRequest' }
+        '200': { $ref: '#/components/responses/SuccessResponse' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
 
-  /v1/projects/_/environments/{environment_id}/clients:
+
+  # TODO: FINISH --------------------------
+
+  /v1/environments/{environment_id}/clients:
     get:
       operationId: getClientsV1
-      tags:
-        - admin
+      tags: [ environments ]
       summary: Get client
       description: Get all clients in an environment
       parameters:
         - name: environment_id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
-          description: The UUID of the environment.
+          schema: { $ref: '#/components/schemas/ID' }
       responses:
         '200':
           description: list of clients
@@ -257,7 +282,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ClientRepresentation'
+                  $ref: '#/components/schemas/ClientObject'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -272,10 +297,7 @@ paths:
         - name: environment_id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
-          description: The UUID of the environment.
+          schema: { $ref: '#/components/schemas/ID' }
       requestBody:
         required: true
         content:
@@ -288,6 +310,7 @@ paths:
                   description: client name
                   pattern: ^[[:alnum:] _]+$
                   minLength: 1
+                  example: Prod Server 01
               required:
                 - name
       responses:
@@ -300,19 +323,14 @@ paths:
   /v1/environments/{environment_id}/secrets:
     get:
       operationId: getEnvironmentSecretsV1
-      tags:
-        - client
-        - admin
+      tags: [ environments ]
       summary: List secrets
       description: Returns all secrets for a given project environment.
       parameters:
         - name: environment_id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
-          description: The UUID of the environment.
+          schema: { $ref: '#/components/schemas/ID' }
       responses:
         '200':
           description: A list of secrets.
@@ -321,6 +339,88 @@ paths:
               schema:
                 $ref: "#/components/schemas/Secrets"
         '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+
+
+  # TODO: FINISH ^^^^^^^^^^^^^^^^^^^^^^
+
+
+  ###############################
+  #          VARIABLES          #
+  ###############################
+
+  /v1/projects/{project_id}/variables:
+    get:
+      operationId: getVariablesV1
+      tags: [ variables ]
+      summary: Get variables
+      description: Get all variables in a project
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/ID' }
+      responses:
+        '200':
+          description: A list of variables.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Variables" } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    post:
+      operationId: createVariableV1
+      tags: [ variables ]
+      summary: Create variable
+      description: Create a new variable in a project
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/ID' }
+      requestBody:
+        $ref: '#/components/requestBodies/CreateVariableRequestBody'
+      responses:
+        '201': { $ref: '#/components/responses/IDResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /v1/variables/{variable_id}:
+    get:
+      operationId: getVariableV1
+      tags: [ variables ]
+      summary: Get Variable
+      description: Get a variable by its ID
+      parameters:
+        - name: variable_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/ID' }
+      responses:
+        '200':
+          description: the Variable object matching `id`
+          content: { application/json: { schema: { $ref: "#/components/schemas/VariableObject" } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    delete:
+      operationId: deleteVariableV1
+      tags: [ variables ]
+      summary: Delete Variable
+      description: Delete a variable by its ID
+      parameters:
+        - name: variable_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/ID' }
+      responses:
+        '200': { $ref: '#/components/responses/SuccessResponse' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/InternalServerError' }
@@ -348,12 +448,35 @@ components:
                   - key
                   - generator
   responses:
-    ClientRepresentationResponse:
-      description: client object
+
+    IDResponse:
+      description: Unique ID of an Object
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ClientRepresentation'
+            type: object
+            properties:
+              id: { $ref: '#/components/schemas/ID' }
+            required: [ id ]
+
+    SuccessResponse:
+      description: Generic object confirming success of a request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: success
+                default: success
+                description: success will always be returned (object is static)
+            required: [ status ]
+
+    ClientRepresentationResponse:
+      description: client object
+      content: { application/json: { schema: { $ref: '#/components/schemas/ClientObject' } } }
+
     CreateClientResponse:
       description: Created Client
       content:
@@ -378,6 +501,7 @@ components:
                     format: uuid
                   key:
                     type: string
+
     Status:
       description: Server Status
       content:
@@ -453,12 +577,10 @@ components:
           schema: { $ref: "#/components/schemas/Error" }
 
   schemas:
-    ClientRepresentation:
+    ClientObject:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
+        id: { $ref: '#/components/schemas/ID' }
         created_at:
           type: string
         display:
@@ -473,14 +595,12 @@ components:
         - environment_id
     Projects:
       type: array
-      items: { $ref: "#/components/schemas/Project" }
-    Project:
+      items: { $ref: "#/components/schemas/ProjectObject" }
+    ProjectObject:
       type: object
       required: [ id, display ]
       properties:
-        id:
-          type: string
-          format: uuid
+        id: { $ref: '#/components/schemas/ID' }
         display:
           type: string
           pattern: ^[[:alnum:] _]+$
@@ -488,8 +608,8 @@ components:
     Variables:
       type: array
       items:
-        $ref: "#/components/schemas/Variable"
-    Variable:
+        $ref: "#/components/schemas/VariableObject"
+    VariableObject:
       type: object
       properties:
         description: { type: string }
@@ -503,9 +623,7 @@ components:
             - type: array
               items: { }
         generator_type: { $ref: '#/components/schemas/GeneratorType' }
-        id:
-          type: string
-          format: uuid
+        id: { $ref: '#/components/schemas/ID' }
         key: { type: string }
         project_id:
           type: string
@@ -520,12 +638,11 @@ components:
     Environments:
       type: array
       items:
-        $ref: "#/components/schemas/Environment"
-    Environment:
+        $ref: "#/components/schemas/EnvironmentObject"
+    EnvironmentObject:
       type: object
       properties:
-        id:
-          type: string
+        id: { $ref: '#/components/schemas/ID' }
         display:
           type: string
       required:
@@ -534,24 +651,20 @@ components:
     Secrets:
       type: array
       items:
-        $ref: "#/components/schemas/Secret"
-    Secret:
+        $ref: "#/components/schemas/SecretObject"
+    SecretObject:
       type: object
       description: Binding of a Secret to a Variable and an Environment (with nested Project), modeled in a single schema.
       required: [ id, value, variable, environment ]
       properties:
-        id:
-          type: string
-          format: uuid
+        id: { $ref: '#/components/schemas/ID' }
         value:
           type: string
         variable:
           type: object
           required: [ id, key ]
           properties:
-            id:
-              type: string
-              format: uuid
+            id: { $ref: '#/components/schemas/ID' }
             key:
               type: string
               description: Variable key/name (e.g., "HOST")
@@ -559,9 +672,7 @@ components:
           type: object
           required: [ id, display, project ]
           properties:
-            id:
-              type: string
-              format: uuid
+            id: { $ref: '#/components/schemas/ID' }
             display:
               type: string
             project:
@@ -586,13 +697,9 @@ components:
             id: 94ab1156-5b42-499f-b8aa-92ca45dfa180
             display: MVP
     ID:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-      required:
-        - id
+      type: string
+      format: uuid
+      example: 157570ef-091b-4dc4-9305-5c62ed14a391
     Error:
       type: object
       properties:

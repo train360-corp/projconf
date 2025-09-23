@@ -5,15 +5,8 @@
  * commercial license.
  */
 
-package supabase
+package main
 
-type AuthConfig struct {
-	Id          string
-	Secret      string
-	AdminAPIKey string
-}
+func patchSpec() {
 
-type Config struct {
-	Url     string
-	AnonKey string
 }

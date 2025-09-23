@@ -1,6 +1,6 @@
 {
-  "name": "web",
-  "version": "0.1.0",
+  "name": "@train360-corp/projconf-studio",
+  "version": "0.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -H 127.0.0.1 -p 3000",
@@ -44,6 +44,7 @@
     "@shikijs/transformers": "^3.12.2",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.0",
+    "@train360-corp/projconf": "^1.4.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

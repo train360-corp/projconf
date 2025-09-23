@@ -8,6 +8,7 @@
 package state
 
 import (
+	"go.uber.org/zap"
 	"sync"
 )
 
@@ -16,6 +17,7 @@ type State struct {
 	postgrest bool
 	mutex     sync.Mutex
 	anonKey   string
+	logger    *zap.SugaredLogger
 }
 
 var state *State
@@ -29,6 +31,14 @@ func Get() *State {
 		}
 	})
 	return state
+}
+
+func (s *State) SetLogger(logger *zap.SugaredLogger) {
+	s.logger = logger
+}
+
+func (s *State) GetLogger() *zap.SugaredLogger {
+	return s.logger
 }
 
 func (s *State) IsAlive() bool {

@@ -11,13 +11,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/gin-gonic/gin"
 	ginvalidator "github.com/oapi-codegen/gin-middleware"
 	"github.com/train360-corp/projconf/go/internal/defaults"
 	"github.com/train360-corp/projconf/go/internal/utils/validators"
-	api2 "github.com/train360-corp/projconf/go/pkg/api"
+	"github.com/train360-corp/projconf/go/pkg/api"
+	"github.com/train360-corp/projconf/go/pkg/api/handlers"
+	"github.com/train360-corp/projconf/go/pkg/server/state"
+	"github.com/train360-corp/supago"
 	"go.uber.org/zap"
 	"net/http"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -38,7 +43,7 @@ type ProjConfServer struct {
 	logger *zap.SugaredLogger
 }
 
-func Init(logger *zap.SugaredLogger) (err error) {
+func Init(logger *zap.SugaredLogger, config *supago.Config) (err error) {
 
 	mu.Lock()
 	defer mu.Unlock()
@@ -49,6 +54,9 @@ func Init(logger *zap.SugaredLogger) (err error) {
 	}
 
 	once.Do(func() {
+
+		state.Get().SetLogger(logger)
+
 		if AdminApiKey == "" {
 			err = fmt.Errorf("admin api key is empty")
 			return
@@ -62,15 +70,38 @@ func Init(logger *zap.SugaredLogger) (err error) {
 		gin.SetMode(gin.ReleaseMode)
 
 		router := gin.New()
-		router.Use(gin.Recovery()) // handle panics, etc.
-		router.Use(auth)           // authentication middleware
+		router.Use(gin.CustomRecoveryWithWriter(nil, func(c *gin.Context, recovered any) {
+			logger.Errorf("panic recovered: %v\n%s", recovered, debug.Stack())
+			c.AbortWithStatusJSON(http.StatusInternalServerError, api.Error{
+				Description: "a panic occurred and was recovered (see server logs for more details)",
+				Error:       "panic recovered",
+			})
+		})) // handle panics, etc.
+		router.Use(authHandler(config)) // authentication middleware
 
 		// use custom validation
-		swagger := api2.MustSpec()
+		swagger := api.MustSpec()
+
+		// request validation
 		router.Use(ginvalidator.OapiRequestValidator(swagger))
 
+		// response validation
+		router.Use(ginvalidator.OapiResponseValidatorWithOptions(swagger, &ginvalidator.Options{
+			ErrorHandler: func(c *gin.Context, message string, statusCode int) {
+				logger.Errorf("%s: %s", c.Request.URL.Path, message)
+				c.AbortWithStatusJSON(statusCode, api.Error{
+					Error:       "response validation failed",
+					Description: "the response from the server failed validation (check server logs for more details)",
+				})
+			},
+			Options: openapi3filter.Options{
+				AuthenticationFunc:    openapi3filter.NoopAuthenticationFunc,
+				IncludeResponseStatus: true,
+			},
+		}))
+
 		// use route handlers
-		api2.RegisterHandlers(router, GetServerInterface())
+		api.RegisterHandlers(router, handlers.GetRouteHandlers("http://127.0.0.1:8000/rest/v1/", config.Keys.PublicJwt))
 
 		// configure logger
 		log := logger

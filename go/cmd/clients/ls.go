@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/train360-corp/projconf/go/internal/flags"
 	"github.com/train360-corp/projconf/go/internal/utils/validators"
-	api2 "github.com/train360-corp/projconf/go/pkg/api"
+	"github.com/train360-corp/projconf/go/pkg/api"
 	"strings"
 )
 
@@ -38,8 +38,8 @@ var createClientCmd = &cobra.Command{
 	},
 	RunE: func(c *cobra.Command, args []string) error {
 
-		client, _ := api2.FromFlags(authFlags)
-		resp, err := client.CreateClientV1WithResponse(c.Context(), environmentId, api2.CreateClientV1JSONRequestBody{
+		client, _ := api.FromFlags(authFlags)
+		resp, err := client.CreateClientV1WithResponse(c.Context(), environmentId, api.CreateClientV1JSONRequestBody{
 			Name: args[0],
 		})
 		if err != nil {
@@ -52,7 +52,7 @@ var createClientCmd = &cobra.Command{
 			if strings.Index(string(resp.Body), "\"ERROR: duplicate key value violates unique constraint") != -1 {
 				return fmt.Errorf("client \"%s\" already exists", args[0])
 			}
-			return fmt.Errorf(api2.GetAPIError(resp))
+			return fmt.Errorf(api.GetAPIError(resp))
 		}
 
 		return nil
