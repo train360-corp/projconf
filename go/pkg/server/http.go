@@ -76,7 +76,7 @@ func Init(logger *zap.SugaredLogger, config *supago.Config) (err error) {
 				Description: "a panic occurred and was recovered (see server logs for more details)",
 				Error:       "panic recovered",
 			})
-		}))                             // handle panics, etc.
+		})) // handle panics, etc.
 		router.Use(authHandler(config)) // authentication middleware
 
 		// use custom validation

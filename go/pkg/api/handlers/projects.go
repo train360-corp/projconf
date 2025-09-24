@@ -52,7 +52,7 @@ func (r RouteHandlers) GetProjectsV1(c *gin.Context) {
 func (r RouteHandlers) GetProjectV1(c *gin.Context, projectId api.ID) {
 	if supabase, err := r.postgrest(c); err != nil {
 		c.JSON(http.StatusInternalServerError, err)
-	} else if response, err := supabase.GetProjectsWithResponse(context.Background(), &postgrest.GetProjectsParams{Id: equals(projectId.String())}); err != nil {
+	} else if response, err := supabase.GetProjectsWithResponse(context.Background(), &postgrest.GetProjectsParams{Id: equals(projectId)}); err != nil {
 		state.Get().GetLogger().Debugf("[%s] request failed: %v", c.Request.URL.Path, err)
 		c.JSON(http.StatusInternalServerError, &api.Error{
 			Error:       "request failed",
@@ -91,7 +91,7 @@ func (r RouteHandlers) CreateProjectV1(c *gin.Context) {
 		})
 	} else if supabase, err := r.postgrest(c); err != nil {
 		c.JSON(http.StatusInternalServerError, err)
-	} else if response, err := supabase.PostProjectsWithResponse(context.Background(), &postgrest.PostProjectsParams{Prefer: preferFull}, postgrest.PostProjectsApplicationVndPgrstObjectPlusJSONRequestBody{Display: req.Name, Id: uuid.New()}); err != nil {
+	} else if response, err := supabase.PostProjectsWithResponse(context.Background(), &postgrest.PostProjectsParams{Prefer: preferFull[postgrest.PostProjectsParamsPrefer]()}, postgrest.PostProjectsApplicationVndPgrstObjectPlusJSONRequestBody{Display: req.Name, Id: uuid.New()}); err != nil {
 		state.Get().GetLogger().Debugf("[%s] request failed: %v", c.Request.URL.Path, err)
 		c.JSON(http.StatusInternalServerError, &api.Error{
 			Error:       "request failed",
@@ -122,7 +122,7 @@ func (r RouteHandlers) CreateProjectV1(c *gin.Context) {
 func (r RouteHandlers) DeleteProjectV1(c *gin.Context, projectId api.ID) {
 	if supabase, err := r.postgrest(c); err != nil {
 		c.JSON(http.StatusInternalServerError, err)
-	} else if response, err := supabase.DeleteProjectsWithResponse(context.Background(), &postgrest.DeleteProjectsParams{Id: equals(projectId.String())}); err != nil {
+	} else if response, err := supabase.DeleteProjectsWithResponse(context.Background(), &postgrest.DeleteProjectsParams{Id: equals(projectId)}); err != nil {
 		state.Get().GetLogger().Debugf("[%s] request failed: %v", c.Request.URL.Path, err)
 		c.JSON(http.StatusInternalServerError, &api.Error{
 			Error:       "request failed",

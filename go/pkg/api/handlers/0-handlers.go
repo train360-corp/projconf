@@ -8,9 +8,7 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/train360-corp/projconf/go/internal/utils"
 	"github.com/train360-corp/projconf/go/pkg/api"
 	"github.com/train360-corp/projconf/go/pkg/postgrest"
 )
@@ -36,8 +34,4 @@ func (r RouteHandlers) postgrest(c *gin.Context) (*postgrest.ClientWithResponses
 		}
 	}
 	return client, nil
-}
-
-func equals(value string) *string {
-	return utils.Ptr(fmt.Sprintf("eq.%s", value))
 }
