@@ -19,8 +19,9 @@ require (
 )
 
 // NRB 09/20/2025: temporary hack while waiting on https://github.com/oapi-codegen/gin-middleware/pull/32
-//replace github.com/oapi-codegen/gin-middleware => github.com/barrownicholas/gin-middleware-pr v0.0.0-20250920050851-f36b05d87a75
-replace github.com/oapi-codegen/gin-middleware => /Users/nrb/GitHub/gin-middleware-pr
+replace github.com/oapi-codegen/gin-middleware => github.com/barrownicholas/gin-middleware-pr v0.0.0-20250920050851-f36b05d87a75
+
+//replace github.com/oapi-codegen/gin-middleware => /Users/nrb/GitHub/gin-middleware-pr
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect

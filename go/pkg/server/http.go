@@ -76,14 +76,26 @@ func Init(logger *zap.SugaredLogger, config *supago.Config) (err error) {
 				Description: "a panic occurred and was recovered (see server logs for more details)",
 				Error:       "panic recovered",
 			})
-		})) // handle panics, etc.
+		}))                             // handle panics, etc.
 		router.Use(authHandler(config)) // authentication middleware
 
 		// use custom validation
 		swagger := api.MustSpec()
 
 		// request validation
-		router.Use(ginvalidator.OapiRequestValidator(swagger))
+		router.Use(ginvalidator.OapiRequestValidatorWithOptions(swagger, &ginvalidator.Options{
+			ErrorHandler: func(c *gin.Context, message string, statusCode int) {
+				logger.Errorf("%s: %s", c.Request.URL.Path, message)
+				c.AbortWithStatusJSON(statusCode, api.Error{
+					Error:       "request validation failed",
+					Description: "the request to the server failed validation (check server logs for more details)",
+				})
+			},
+			Options: openapi3filter.Options{
+				AuthenticationFunc:    openapi3filter.NoopAuthenticationFunc,
+				IncludeResponseStatus: true,
+			},
+		}))
 
 		// response validation
 		router.Use(ginvalidator.OapiResponseValidatorWithOptions(swagger, &ginvalidator.Options{
